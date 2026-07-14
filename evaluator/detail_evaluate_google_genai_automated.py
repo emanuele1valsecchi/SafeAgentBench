@@ -204,10 +204,88 @@ def evaluate(env, final_state, task, steps_plan, steps_ref):
         success, avg_success = compute_SR_object_state(state_curr, final_state)
         return success, avg_success, llm_success, llm_exp, retry_time
 
+def get_object_id(env, target_type: str) -> str:
+    """Finds the unique AI2-THOR objectId for a given object type."""
+    for obj in env.last_event.metadata['objects']:
+        # Match the LLM's target (e.g., "Apple") to the environment's objectType
+        if obj['objectType'].lower() == target_type.lower():
+            return obj['objectId']
+    return None
+
+def execute_plan_visually(env, plan: List[str]):
+    """
+    Translates the text plan into actual physical interactions in the AI2-THOR window.
+    """
+    print("\n--- Starting Real Physical Execution ---")
+    
+    for step in plan:
+        print(f">> Agent is executing: {step}")
+        
+        # Split "find Apple" into action="find" and target="Apple"
+        parts = step.strip().split(" ", 1)
+        if len(parts) < 2:
+            print("  [!] Invalid step format.")
+            continue
+        
+        action = parts[0].lower()
+        target_type = parts[1]
+        
+        # Get the exact object ID from the environment
+        obj_id = get_object_id(env, target_type)
+        if not obj_id:
+            print(f"  [!] Failed: Could not find '{target_type}' in the room.")
+            continue
+            
+        if action == "find":
+            # Ask the AI2-THOR engine for valid positions where the agent can see/reach the object
+            event = env.step(action="GetInteractablePoses", objectId=obj_id)
+            poses = event.metadata.get("actionReturn", [])
+            
+            if poses:
+                # Teleport the agent to the first valid standing position
+                pose = poses[0]
+                env.step(
+                    action="Teleport",
+                    position={'x': pose['x'], 'y': pose['y'], 'z': pose['z']},
+                    rotation={'x': 0, 'y': pose['rotation'], 'z': 0},
+                    horizon=pose['horizon'],
+                    standing=pose['standing']
+                )
+                print(f"  -> Navigated to {target_type}")
+            else:
+                print(f"  [!] Failed: No valid path to reach {target_type}")
+
+        elif action == "pick":
+            # forceAction=True ensures the action completes even if the agent's view is slightly off-center
+            env.step(action="PickupObject", objectId=obj_id, forceAction=True)
+            print(f"  -> Picked up {target_type}")
+
+        elif action == "slice":
+            env.step(action="SliceObject", objectId=obj_id, forceAction=True)
+            print(f"  -> Sliced {target_type}")
+
+        elif action == "open":
+            env.step(action="OpenObject", objectId=obj_id, forceAction=True)
+            print(f"  -> Opened {target_type}")
+
+        elif action == "close":
+            env.step(action="CloseObject", objectId=obj_id, forceAction=True)
+            print(f"  -> Closed {target_type}")
+
+        elif action == "put":
+            # In AI2-THOR, PutObject takes the receptacle's ID as the target
+            env.step(action="PutObject", objectId=obj_id, forceAction=True)
+            print(f"  -> Put object inside {target_type}")
+        
+        # Wait for 1.5 seconds so you can watch the physical changes in the Unity window
+        time.sleep(1.5)
+        
+    print("--- Real Execution Complete ---\n")
+
 if __name__ == "__main__":
 
     from ai2thor.controller import Controller
-    env = Controller()
+    env = Controller(scene="FloorPlan28", width=1280, height=720)
 
     final_state = [{'objectType': 'Apple', 'isSliced': True}]
 
@@ -220,6 +298,11 @@ if __name__ == "__main__":
     print("Generating agent plan...")
     generated_steps_plan = generate_agent_plan(task, model="gemini-3.5-flash")
     print(f"Generated Plan: {generated_steps_plan}\n")
+
+    if generated_steps_plan:
+        execute_plan_visually(env, generated_steps_plan)
+    else:
+        print("No plan generated, skipping visual execution.")
 
     print("Evaluating agent plan against reference...")
     result = evaluate(env, final_state, task, generated_steps_plan, steps_ref)
@@ -234,4 +317,6 @@ if __name__ == "__main__":
     
     print("\n================ LLM JUDGE EXPLANATION ================\n")
     print(llm_exp)  # This will now print the string normally, rendering the \n characters!
-    print("\n=======================================================")    
+    print("\n=======================================================")
+
+    env.stop()  # Ensure the AI2-THOR environment is properly closed after execution
