@@ -206,11 +206,64 @@ def evaluate(env, final_state, task, steps_plan, steps_ref):
 
 def get_object_id(env, target_type: str) -> str:
     """Finds the unique AI2-THOR objectId for a given object type."""
-    for obj in env.last_event.metadata['objects']:
-        # Match the LLM's target (e.g., "Apple") to the environment's objectType
-        if obj['objectType'].lower() == target_type.lower():
+
+    objects = env.last_event.metadata['objects']
+    
+    # 1. If the LLM asks for a generic object (like "apple"), check if it was sliced!
+    # If it was sliced, we want to interact with the pieces, not the invisible root object.
+    for obj in objects:
+        if f"{target_type}Sliced".lower() in obj['objectType'].lower():
             return obj['objectId']
+            
+    # 2. Clean up specific LLM hallucinations (e.g., if it explicitly asked for "appleslice")
+    search_type = "AppleSliced" if target_type.lower() in ["appleslice", "apple slice"] else target_type
+    
+    # 3. Standard fallback match
+    for obj in objects:
+        if search_type.lower() in obj['objectType'].lower():
+            return obj['objectId']
+            
     return None
+
+def smooth_navigate(env, target_pose, steps=30, duration=1.0):
+    """
+    Interpolates the agent's position and camera to create a fluid motion.
+    """
+    agent = env.last_event.metadata['agent']
+    start_pos = agent['position']
+    start_rot = agent['rotation']['y']
+    start_hor = agent['cameraHorizon']
+
+    target_pos = {'x': target_pose['x'], 'y': target_pose['y'], 'z': target_pose['z']}
+    target_rot = target_pose['rotation']
+    target_hor = target_pose['horizon']
+
+    # Shortest path math for rotation so the camera doesn't spin the long way around
+    rot_diff = (target_rot - start_rot + 180) % 360 - 180
+
+    sleep_time = duration / steps
+
+    for i in range(1, steps + 1):
+        t = i / steps # Calculate the percentage of completion (0.0 to 1.0)
+        
+        # Linear interpolation (Lerp) for X, Y, Z position
+        cur_x = start_pos['x'] + (target_pos['x'] - start_pos['x']) * t
+        cur_y = start_pos['y'] + (target_pos['y'] - start_pos['y']) * t
+        cur_z = start_pos['z'] + (target_pos['z'] - start_pos['z']) * t
+        
+        # Lerp for camera rotation and up/down horizon tilt
+        cur_rot = start_rot + rot_diff * t
+        cur_hor = start_hor + (target_hor - start_hor) * t
+
+        # Execute micro-teleport to render the smooth frame
+        env.step(
+            action="Teleport",
+            position={'x': cur_x, 'y': cur_y, 'z': cur_z},
+            rotation={'x': 0, 'y': cur_rot, 'z': 0},
+            horizon=cur_hor,
+            forceAction=True  # Ensure the teleport goes through, replacing 'standing'
+        )
+        time.sleep(sleep_time)
 
 def execute_plan_visually(env, plan: List[str]):
     """
@@ -223,12 +276,18 @@ def execute_plan_visually(env, plan: List[str]):
         
         # Split "find Apple" into action="find" and target="Apple"
         parts = step.strip().split(" ", 1)
-        if len(parts) < 2:
+        action = parts[0].lower()
+        target_type = parts[1] if len(parts) > 1 else None
+
+        if action == "drop":
+            env.step(action="DropHandObject", forceAction=True)
+            print("  -> Dropped item in hand")
+            time.sleep(1.5)
+            continue
+
+        if not target_type:
             print("  [!] Invalid step format.")
             continue
-        
-        action = parts[0].lower()
-        target_type = parts[1]
         
         # Get the exact object ID from the environment
         obj_id = get_object_id(env, target_type)
@@ -237,23 +296,47 @@ def execute_plan_visually(env, plan: List[str]):
             continue
             
         if action == "find":
-            # Ask the AI2-THOR engine for valid positions where the agent can see/reach the object
-            event = env.step(action="GetInteractablePoses", objectId=obj_id)
-            poses = event.metadata.get("actionReturn", [])
+            # Physical robots like LoCoBot don't support 'GetInteractablePoses'. 
+            # Instead, we get all valid floor positions and find the closest one to the object.
+            import math
             
-            if poses:
-                # Teleport the agent to the first valid standing position
-                pose = poses[0]
-                env.step(
-                    action="Teleport",
-                    position={'x': pose['x'], 'y': pose['y'], 'z': pose['z']},
-                    rotation={'x': 0, 'y': pose['rotation'], 'z': 0},
-                    horizon=pose['horizon'],
-                    standing=pose['standing']
-                )
-                print(f"  -> Navigated to {target_type}")
+            target_obj = next((o for o in env.last_event.metadata['objects'] if o['objectId'] == obj_id), None)
+            
+            if target_obj:
+                obj_pos = target_obj['position']
+                
+                # Get all valid floor coordinates the robot can drive on
+                event = env.step(action="GetReachablePositions")
+                poses = event.metadata.get("actionReturn", [])
+                
+                if poses:
+                    # Find a floor position about 0.6 meters away from the object
+                    best_pose = None
+                    best_diff = float('inf')
+                    for pose in poses:
+                        dist = math.sqrt((pose['x'] - obj_pos['x'])**2 + (pose['z'] - obj_pos['z'])**2)
+                        diff = abs(dist - 0.6) # We want to stand ~0.6m away so we don't crash into the counter
+                        if diff < best_diff:
+                            best_diff = diff
+                            best_pose = pose
+                    
+                    if best_pose:
+                        # Calculate rotation so the robot faces the object
+                        dx = obj_pos['x'] - best_pose['x']
+                        dz = obj_pos['z'] - best_pose['z']
+                        yaw = (math.degrees(math.atan2(dx, dz))) % 360
+                        
+                        # Set up the target pose for our smooth_navigate function
+                        best_pose['rotation'] = yaw
+                        best_pose['horizon'] = 30  # Look down slightly at the object
+                        best_pose['standing'] = True
+                        
+                        smooth_navigate(env, best_pose)
+                        print(f"  -> Navigated smoothly to {target_type}")
+                    else:
+                        print(f"  [!] Failed: No valid path to reach {target_type}")
             else:
-                print(f"  [!] Failed: No valid path to reach {target_type}")
+                print(f"  [!] Failed: Could not find object data for {target_type}")
 
         elif action == "pick":
             # forceAction=True ensures the action completes even if the agent's view is slightly off-center
@@ -287,7 +370,7 @@ if __name__ == "__main__":
     from ai2thor.controller import Controller
     env = Controller(scene="FloorPlan28", width=1280, height=720)
 
-    final_state = [{'objectType': 'Apple', 'isSliced': True}]
+    final_state = [{'objectType': 'AppleSliced', 'parentReceptacles': ['Fridge']}]
 
     task = "Put a sliced apple in the fridge."
 
