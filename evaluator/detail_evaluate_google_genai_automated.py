@@ -368,7 +368,7 @@ def execute_plan_visually(env, plan: List[str]):
 if __name__ == "__main__":
 
     from ai2thor.controller import Controller
-    env = Controller(scene="FloorPlan28", width=1280, height=720)
+    env = Controller(scene="FloorPlan15", width=1280, height=720)
 
     final_state = [{'objectType': 'AppleSliced', 'parentReceptacles': ['Fridge']}]
 
