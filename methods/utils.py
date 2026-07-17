@@ -141,7 +141,7 @@ def execute_low_level_plan(low_level_plan: list, planner):
             if ret_dict["success"]:
                 num_success_steps += 1
         except Exception as e:
-            traceback.print_exc()  # 打印完整的异常堆栈信息
+            traceback.print_exc()  # Print complete exception stack trace information
             continue
     if len(low_level_plan) == 0:
         sr_step = 0

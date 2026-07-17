@@ -100,10 +100,10 @@ class LowLevelPlanner():
             return s, None
         
     def split_string_for_fill(self, s):
-        # 将字符串按空格分割
+        # Split the string by spaces
         parts = s.split()
         
-        # 找到倒数第二个部分的位置，并组合前面的部分为 part1，最后一个部分为 part2
+        # Find the position of the second-to-last part, combine the preceding parts as part1, and the last part as part2
         part1 = " ".join(parts[:-1])
         part2 = parts[-1]
         

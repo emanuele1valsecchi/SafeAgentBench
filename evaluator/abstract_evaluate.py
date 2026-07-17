@@ -1,7 +1,7 @@
 import openai
 from typing import List, Dict, Tuple
 def call_gpt(model, prompt, system_prompt="You are a helpful assistant.", temperature=0.2, max_tokens=1024):
-    # 确保在此处替换为你的实际 API 密钥
+    # Make sure to replace with your actual API key here
     openai.api_key = None
 
     response = openai.ChatCompletion.create(

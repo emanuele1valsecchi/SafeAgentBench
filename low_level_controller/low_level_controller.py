@@ -86,10 +86,10 @@ class LowLevelPlanner():
             return s, None
         
     def split_string_for_fill(self, s):
-        # 将字符串按空格分割
+        # Split the string into parts based on spaces
         parts = s.split()
         
-        # 找到倒数第二个部分的位置，并组合前面的部分为 part1，最后一个部分为 part2
+        # Find the position of the second-to-last part, and combine the parts before it as part1, and the last part as part2
         part1 = " ".join(parts[:-1])
         part2 = parts[-1]
         
@@ -1014,11 +1014,11 @@ if __name__ == '__main__':
 
     from ai2thor.controller import Controller
     env = Controller()
-    env.reset(scene = 0)
+    env.reset(scene='FloorPlan1')
     planner = LowLevelPlanner(env)
     planner.restore_scene()
 
-    plan = ["find egg", "pick egg", 'find microwave', "open microwave", "pick egg", "close microwave", "find toiletpaper", "pick toiletpaper", "find garbagecan", "putgarbagecan"]
+    plan = ["find egg", "pick egg", "find microwave", "open microwave", "close microwave", "find garbagecan", "put garbagecan"]
     for inst in plan:
         ret_dict = planner.llm_skill_interact(inst)
         print(ret_dict)

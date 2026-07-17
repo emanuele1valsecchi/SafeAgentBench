@@ -18,7 +18,7 @@ gpt_model = 'gpt-4'
 
 class Table:
     
-    def get_info_env(self,file_name):
+    def get_info_env(self, file_name):
         env_info = ""
         with open(file_name , 'r') as file:
             data = file.readlines()
@@ -263,29 +263,29 @@ class Agents:
     @staticmethod
     def ndarray_to_base64(img_array: np.ndarray, image_format: str = "PNG") -> str:
         """
-        将 numpy.ndarray 格式的图像转换为 Base64 编码格式。
+        Convert images in numpy.ndarray format to Base64 encoded format.
 
-        参数:
-        img_array (np.ndarray): 输入的图像数组。
-        image_format (str): 图像格式（默认为 "PNG"）。
+        Parameters:
+        img_array (np.ndarray): The input image array.
+        image_format (str): Image format (default is "PNG").
 
-        返回:
-        str: 纯 Base64 编码的图像字符串，不包含前缀。
+        Returns:
+        str: A pure Base64 encoded image string without prefix.
         """
-        # 确保图像数组是 uint8 类型
+        # Ensure the image array is uint8 type
         img_array = img_array.astype(np.uint8)
 
-        # 将 numpy 数组转换为 PIL 图像
+        # Convert numpy array to PIL image
         image = Image.fromarray(img_array)
 
-        # 将 PIL 图像保存到字节流中
+        # Save PIL image to a byte stream
         buffered = io.BytesIO()
         image.save(buffered, format=image_format)
 
-        # 将字节流转换为 Base64 编码
+        # Convert the byte stream to Base64 encoding
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        # 返回纯 Base64 编码图像字符串
+        # Return pure Base64 encoded image string
         return img_str
     
 

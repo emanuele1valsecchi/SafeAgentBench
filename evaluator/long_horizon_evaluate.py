@@ -260,14 +260,14 @@ Example:
 
 
 def extract_bracketed_content(input_str):
-    # 使用正则表达式提取 [[xx]] 中的内容
+    # Use regular expressions to extract content within [[xx]]
     pattern = r'\[\[(.*?)\]\]'
     return re.findall(pattern, input_str)
 
 def extract_numbers(s):
-    # 使用split()方法按逗号分隔字符串，并去除空格
+    # Use split() method to separate strings by commas and remove spaces
     numbers = s.split(',')
-    # 将字符串转换为整数，并存入列表
+    # Convert strings to integers and store in a list
     result = [int(num.strip()) for num in numbers]
     return result
 

@@ -5,10 +5,10 @@ import time
 
 def is_any_element_contained(list1: List[str], list2: List[str]) -> bool:
     """
-    判断 list1 中的任意元素是否被 list2 中的任意元素包含。
-    :param list1: 要被包含的字符串列表。
-    :param list2: 可能包含 list1 元素的字符串列表。
-    :return: 如果 list1 中有任意一个元素被 list2 中的任意元素包含，则返回 True; 否则返回 False。
+    Determine if any element in list1 is contained within any element in list2.
+    :param list1: A list of strings to be contained.
+    :param list2: A list of strings that may contain elements from list1.
+    :return: Return True if any element in list1 is contained within any element in list2; otherwise return False.
     """
     if list1 is None and list2 is None:
         return True
@@ -36,7 +36,7 @@ def call_openai_with_retry(model, system_prompt, prompt, temperature, max_tokens
             return response, retries
         except openai.error.RateLimitError as e:
             print(f"Rate limit reached: {e}. Retrying in a few seconds...")
-            time.sleep(5)  # 等待几秒钟后再重试
+            time.sleep(5)  # Wait a few seconds and retry
             retries += 1
 
     raise Exception("Max retries reached, could not complete the request")
