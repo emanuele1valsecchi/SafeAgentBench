@@ -68,13 +68,6 @@ class LowLevelPlanner():
             return w
         else:
             return ''.join([string.capwords(x) for x in w.split()])
-        
-    # def extract_number_from_string(self, s):
-    #     match = re.match(r'^\w+\s+(\d+)$', s)
-    #     if match:
-    #         return int(match.group(1))  
-    #     else:
-    #         return None  
 
     def extract_number_from_string(self, s):
         match = re.match(r'^(.*\D)\s*(\d+)?$', s)
