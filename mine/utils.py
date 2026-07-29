@@ -1,7 +1,7 @@
 def print_separator():
     print("\n" + "=" * 100 + "\n")
 
-def yn_question(question):
+def yn_question(question: str):
     resp = ""
 
     while not resp:
@@ -15,7 +15,7 @@ def yn_question(question):
             print(f"\nAnswer can only be 'y', 'yes', 'n' or 'no', cannot accept '{resp}'\n")
             resp = ""
 
-def req_not_empty_value(question, error_message="The value inserted is not allowed, please provide a valid input"):
+def req_not_empty_value(question: str, error_message: str="The value inserted is not allowed, please provide a valid input"):
     d = ""
 
     while not d:
@@ -26,3 +26,10 @@ def req_not_empty_value(question, error_message="The value inserted is not allow
             d = ""
 
     return d
+
+def wait_ui(text : str = "", end_message: str = "Press enter to continue"):
+    """Wait for user input: wait for enter key pressed by the user"""
+    if end_message:
+        input (f"{text}\n\n{end_message}")
+    else:
+        input(f"{text}")
