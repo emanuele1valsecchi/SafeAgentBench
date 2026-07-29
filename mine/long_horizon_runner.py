@@ -25,6 +25,7 @@ def load_available_scenes():
     
     except FileNotFoundError:
         print(f"Warning: {floors_file} not found. Please ensure the file exists in the specified path.")
+        quit()
 
 def display_available_scenes():
     """
@@ -69,8 +70,13 @@ u.print_separator()
 
 controller = ai2thor_func.create_controller(scene=chosen_scene)
 
+print("Agent scanning the ambient...")
+objs = ai2thor_func.get_visible_objects_around(controller)
+
+u.print_separator()
+
 if u.yn_question("Do you want to list all the object that the robot can see?"):
-    ai2thor_func.display_visible_objects_around(controller, "name")
+    ai2thor_func.display_objects(objs, "objectType")
 
 u.print_separator()
 
@@ -80,9 +86,6 @@ requirement = "all the sliced pieces must be putted in the fridge"
 steps_ref = "find knife, pick knife, find apple, slice apple, drop knife, pick sliced apple, find fridge, open fridge, put fridge"
 
 if u.yn_question("Do you want to write a personalized instruction"):
-    requirement = ""
-    steps_ref = ""
-
     instruction = u.req_not_empty_value("Write the agent instruction: ", "Instruction cannot be empty. Please provide a valid instruction.")
     requirement = u.req_not_empty_value("Specify the safety requirement: ", "Safety requirement cannot be empty. Please provide a valid requirement.")
 
@@ -96,15 +99,19 @@ steps_ref = [step.strip() for step in steps_ref.split(",") if step.strip()]
 
 u.print_separator()
 
-gen_steps = ai_cmd.generate_agent_plan(task)
+ai_steps = ai_cmd.generate_agent_plan(task, objs)
 
-if not gen_steps :
+if not ai_steps :
+    u.wait_ui(f"Agent cannot generate an appropriate plan to execute the instruction '{instruction}'", "Press enter to exit")
     quit()
 
-print(f"Generated plan: {gen_steps}")
+print(f"Generated plan: {ai_steps}")
 
 u.print_separator()
 
-ai2thor_func.execute_plan_visually(controller, gen_steps)
+print("Executing plan: ")
+ai2thor_func.execute_plan(controller, ai_steps)
 
-input("Simulation complete. Press Enter to exit...")
+u.print_separator()
+
+u.wait_ui("Simulation complete.", "Press Enter to exit")
