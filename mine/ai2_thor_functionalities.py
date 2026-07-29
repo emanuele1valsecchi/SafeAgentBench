@@ -2,12 +2,17 @@
 
 from ai2thor.controller import Controller
 import time
+import math
 
-# Return a controller object with the specified parameters
+# === DEFAULT VALUES ===
+sleep_between_steps = 0.0001
+
+# === CREATION ===
 def create_controller(agentMode = "default", visibilityDistance = 100, scene = "FloorPlan1", 
                       gridSize = 0.1, snapToGrid = False, rotationStepDegrees = 1,
                       renderDepthImage = True, renderInstanceSegmentation = True, 
                       width = 1280, height = 720, fieldOfView = 90):
+    """Return a controller object with the specified parameters"""
     return Controller(
         agentMode=agentMode,
         visibilityDistance=visibilityDistance,
@@ -25,8 +30,9 @@ def create_controller(agentMode = "default", visibilityDistance = 100, scene = "
         fieldOfView=fieldOfView
     )
 
-# Get the agent's reachable position in the scene.
+# === POSITION ===
 def get_agent_reachable_position(controller: Controller):
+    """Get the agent's reachable position in the scene."""
     return controller.step(action="GetReachablePositions").metadata["actionReturn"]
 
 def display_agent_reachable_position(controller: Controller):
@@ -34,60 +40,52 @@ def display_agent_reachable_position(controller: Controller):
     for pos in get_agent_reachable_position(controller):
         print(f"{pos}")
 
-def get_objects_in_scene(controller: Controller, **kwargs):
-    """Get objects in scene, if **kwargs is passed only the one respecting 'key:value' are returned.\n 
-    If no object respects the filter 'key:value' an emtpy list is returned """
+def navigate_to(controller: Controller, target_position, steps = 60):
+    """
+    Interpolates the agent's position and camera to create a fluid motion.
+    """
+    agent = controller.last_event.metadata['agent']
+    start_pos = agent['position']
+    start_rot = agent['rotation']['y']
+    start_hor = agent['cameraHorizon']
 
-    if not kwargs:
-        return controller.last_event.metadata["objects"]
+    target_pos = {'x': target_position['x'], 'y': target_position['y'], 'z': target_position['z']}
+    target_rot = target_position['rotation']
+    target_hor = target_position['horizon']
 
-    fobjs = []
+    # Shortest path math for rotation so the camera doesn't spin the long way around
+    rot_diff = (target_rot - start_rot + 180) % 360 - 180
 
-    for obj in controller.last_event.metadata["objects"]:
-        if all(obj.get(k) == v for k, v in kwargs.items()):
-            fobjs.append(obj)
+    for i in range(1, steps + 1):
+        t = i / steps # Calculate the percentage of completion (0.0 to 1.0)
+        
+        # Linear interpolation (Lerp) for X, Y, Z position
+        cur_x = start_pos['x'] + (target_pos['x'] - start_pos['x']) * t
+        cur_y = start_pos['y'] + (target_pos['y'] - start_pos['y']) * t
+        cur_z = start_pos['z'] + (target_pos['z'] - start_pos['z']) * t
+        
+        # Lerp for camera rotation and up/down horizon tilt
+        cur_rot = start_rot + rot_diff * t
+        cur_hor = start_hor + (target_hor - start_hor) * t
 
-    return fobjs
+        # Execute micro-teleport to render the smooth frame
+        controller.step(
+            action="Teleport",
+            position={'x': cur_x, 'y': cur_y, 'z': cur_z},
+            rotation={'x': 0, 'y': cur_rot, 'z': 0},
+            horizon=cur_hor,
+            forceAction=True  # Ensure the teleport goes through, replacing 'standing'
+        )
+        time.sleep(sleep_between_steps)
 
-def find_object(controller: Controller, object_name: str):
-    """Return the object with object_name reference in the scene if found, otherwise None"""
+# === AGENT MOVEMENT ===
+def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, step = 10):
+    """Rotate the agent smoothly by stepping through smaller rotation increments.
 
-    if not object_name:
-        return None
-    
-    objs = get_objects_in_scene(controller)
-
-    for obj in objs:
-        if obj['objectType'].lower() == object_name.lower():
-            return obj
-
-    return None
-
-def display_objects_in_scene(controller: Controller, *args, **kwargs):
-    """Display objects in the scene.\n
-    Optionally specified the object characteristic to show in args\n
-    Optionally filtered by **kwargs"""
-
-    for obj in get_objects_in_scene(controller, **kwargs):
-        if args:
-            for objk, objd in obj.items():
-                if objk in args:
-                    print(f"{objk}: {objd}")
-        else:
-            for objk, objd in obj.items():
-                print(f"{objk}: {objd}")
-        print()
-
-def display_visible_objects_in_scene(controller: Controller, *args):
-    """Display only the visible objects in the scene, optionally specify the object characteristic to show"""
-    display_objects_in_scene(controller, *args, visible=True)
-
-def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, step = 10, sleep_between_steps=0.0001):
-    """Rotate the agent smoothly by stepping through smaller rotation increments.\n
-    - direction: 'left' or 'right'\n
-    - total_degrees: how many degrees to rotate in total\n
-    - step: degrees per step\n
-    - sleep_between_steps: seconds to wait between steps for visible smoothness"""
+    Args:
+        direction: 'left' or 'right'
+        total_degrees: how many degrees to rotate in total
+        step: degrees per step"""
 
     if direction not in {"left", "right"}:
         raise ValueError("direction must be 'left' or 'right'")
@@ -105,23 +103,287 @@ def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, s
         if remaining > 0:
             time.sleep(sleep_between_steps)
 
-def rotate_agent_left_smoothly(controller: Controller, total_degrees=90, step=10, sleep_between_steps=0.0001):
-    rotate_agent_smoothly(controller, "left", total_degrees, step, sleep_between_steps)
+def rotate_agent_left_smoothly(controller: Controller, total_degrees=90, step=10):
+    rotate_agent_smoothly(controller, "left", total_degrees, step)
 
-def rotate_agent_right_smoothly(controller: Controller, total_degrees=90, step=10, sleep_between_steps=0.0001):
-    rotate_agent_smoothly(controller, "right", total_degrees, step, sleep_between_steps)
+def rotate_agent_right_smoothly(controller: Controller, total_degrees=90, step=10):
+    rotate_agent_smoothly(controller, "right", total_degrees, step)
 
-def display_visible_objects_around(controller: Controller, *args):
-    """Display all the visible objects around the agent in the scene, optionally specify the object characteristic to show"""
+def reach_object(controller: Controller, object, obj_dist=0.6):
+    """Search for the object in the scene and evaluate the distance that the robot has to move in order to reach the object"""
+
+    obj_pos = object['position']
+
+    agent_poses = get_agent_reachable_position(controller)
+
+    if not agent_poses:
+        print("Agent can't move")
+        return
+    
+    best_pose = None
+    best_diff = float('inf')
+
+    for pose in agent_poses:
+        dist = math.sqrt( (pose['x'] - obj_pos['x']) ** 2 + 
+                          (pose['z'] - obj_pos['z']) ** 2 )
+        diff = abs(dist - obj_dist)
+
+        if diff < best_diff:
+            best_diff = diff
+            best_pose = pose
+
+    if not best_pose:
+        print(f"No valid path to reach {get_object_type(object)}")
+
+    if best_pose:
+        # Calculate rotation so the robot faces the object
+        dx = obj_pos['x'] - best_pose['x']
+        dz = obj_pos['z'] - best_pose['z']
+        yaw = (math.degrees(math.atan2(dx, dz))) % 360
+        
+        # Set up the target pose for our smooth_navigate function
+        best_pose['rotation'] = yaw
+        best_pose['horizon'] = 30  # Look down slightly at the object
+        best_pose['standing'] = True
+
+        navigate_to(controller, best_pose)
+
+# === OBJECTS ===
+def get_object_type(object) -> str:
+    return object['objectType']
+
+def get_object_id(object : dict) -> str:
+    return object['objectId']
+
+def find_object(controller: Controller, object_name: str):
+    """Return the object with object_name reference in the scene if found, otherwise None"""
+
+    if not object_name:
+        return None
+    
+    objs = get_objects_in_scene(controller)
+
+    for obj in objs:
+        if get_object_type(obj).lower() == object_name.lower():
+            return obj
+
+    return None
+
+def filter_objects_for(objects : list, **kwargs) -> list:
+    """Filter the objects list passed accordingly to **kwargs 'key:value'.\n
+    If no object respects the filter 'key:value' an empty list is returned.\n
+    In case that the specified key:value is not valid, an empty list is returned"""
+    
+    fobjs = []
+
+    for obj in objects:
+        if all(obj.get(k) == v for k,v in kwargs.items()):
+            fobjs.append(obj)
+
+    return fobjs
+
+def get_objects_in_scene(controller: Controller, **kwargs):
+    """Get objects in scene, if **kwargs is passed only the one respecting 'key:value' are returned.\n 
+    If no object respects the filter 'key:value' an emtpy list is returned\n
+    In case that the specified key:value is not valid, an empty list is returned"""
+
+    if not kwargs:
+        return controller.last_event.metadata["objects"]
+
+    return filter_objects_for(controller.last_event.metadata["objects"], **kwargs)
+
+def display_objects(objects, *args: str):
+    """Display objects.\n
+    Optionally specified the object characteristic to show in args\n"""
+
+    for obj in objects :
+        if args:
+            for objk, objd in obj.items():
+                if objk in args:
+                    print(f"{objk}: {objd}")
+        else:
+            for objk, objd in obj.items():
+                print(f"{objk}: {objd}")
+        print()
+
+def get_visible_objects_in_scene(controller: Controller):
+    return get_objects_in_scene(controller, visible=True)
+
+def get_visible_objects_around(controller: Controller):
+    objs = []
+
     for i in range(4):
-        display_visible_objects_in_scene(controller, *args)
+        objs.extend(get_visible_objects_in_scene(controller))
         rotate_agent_left_smoothly(controller)
 
-def execute_plan_visually(controller: Controller, plan: list[str]):
+    return objs
+
+def execute_plan(controller: Controller, plan: list[str]):
+    """Execute the plan in the Ai2Thor environment
+    
+    Args:
+        controller: the Ai2Thor controller
+        plan: list of instructione that the embodied has to execute"""
+    
     for step in plan:
         parts = step.strip().split(" ", 1)
 
         action = parts[0].lower().strip()
         target = parts[1].lower().strip() if len(parts) > 1 else None
 
-        obj = find_object(controller, target)
+        if target:
+            obj = find_object(controller, target)
+
+            if not obj:
+                print(f"Error: Object '{target}' not found in the environment\n\n")
+                input()
+                return
+
+        print(f" -> {step} ")
+
+        match action:
+            case "find":
+                reach_object(controller, obj)
+
+            case "pick":
+                pick_up_object(controller, obj)
+
+            case "put":
+                put_object(controller, obj)
+
+            case "drop":
+                drop_object(controller)
+
+            case "throw":
+                throw_object()
+
+            case "moveheldback":
+                move_held_object_back()
+
+            case "moveheldleft":
+                move_held_object_left()
+
+            case "moveheldright":
+                move_held_object_right()
+
+            case "moveheldup":
+                move_held_object_up()
+
+            case "movehelddown":
+                move_held_object_down()
+
+            case "pour":
+                rotate_held_object()
+
+            case "push":
+                directional_push_object()
+
+            case "pull":
+                direction_pull_object()
+
+            case "open":
+                open_object(controller, obj)
+
+            case "close":
+                close_object(controller, obj)
+
+            case "break":
+                break_object()
+
+            case "cook":
+                cook_object()
+
+            case "slice":
+                slice_object(controller, obj)
+
+            case "turnoon":
+                toggle_object_on()
+
+            case "turnoff":
+                toggle_object_off()
+
+            case "dirty":
+                dirty_object()
+
+            case "clean":
+                clean_object()
+
+            case "fillliquid":
+                fill_object_with_liquid()
+
+            case "emptyliquid":
+                empty_object_from_liquid()
+
+            case _:
+                print(f"Action '{action}' not allowed")
+        
+        time.sleep(sleep_between_steps)
+
+def pick_up_object(controller: Controller, object : dict):
+    controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
+
+def put_object(controller: Controller, object: dict):
+    controller.step(action="PutObject", objectId=get_object_id(object), forceAction=True)
+
+def drop_object(controller: Controller):
+    controller.step(action="DropHandObject", forceAction=True)
+
+def throw_object():
+    pass
+
+def move_held_object_back():
+    pass
+
+def move_held_object_left():
+    pass
+
+def move_held_object_right():
+    pass
+
+def move_held_object_up():
+    pass
+
+def move_held_object_down():
+    pass
+
+def rotate_held_object():
+    pass
+
+def directional_push_object():
+    pass
+
+def direction_pull_object():
+    pass
+
+def open_object(controller: Controller, object: dict):
+    controller.step(action="OpenObject", objectId=get_object_id(object), forceAction=True)
+
+def close_object(controller: Controller, object: dict):
+    controller.step(action="CloseObject", objectId=get_object_id(object), forceAction=True)
+
+def break_object():
+    pass
+
+def cook_object():
+    pass
+
+def slice_object(controller: Controller, object: dict):
+    controller.step(action="SliceObject", objectId=get_object_id(object), forceAction=True)
+
+def toggle_object_on():
+    pass
+
+def toggle_object_off():
+    pass
+
+def dirty_object():
+    pass
+
+def clean_object():
+    pass
+
+def fill_object_with_liquid():
+    pass
+
+def empty_object_from_liquid():
+    pass
