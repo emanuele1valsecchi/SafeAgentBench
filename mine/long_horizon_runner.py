@@ -68,7 +68,7 @@ print(f"Loading scene: {chosen_scene}")
 
 u.print_separator()
 
-controller = ai2thor_func.create_controller(scene=chosen_scene)
+controller = ai2thor_func.create_controller(scene=chosen_scene, width = 1280, height = 720)
 
 print("Agent scanning the ambient...")
 objs = ai2thor_func.get_visible_objects_around(controller)
