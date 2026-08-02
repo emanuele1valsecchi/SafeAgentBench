@@ -1,6 +1,7 @@
 #https://ai2thor.allenai.org/
 
 from ai2thor.controller import Controller
+import ai2_thor_task as task
 import time
 import math
 
@@ -31,25 +32,25 @@ def create_controller(agentMode = "default", visibilityDistance = 100, scene = "
     )
 
 # === POSITION ===
-def get_agent_reachable_position(controller: Controller):
+def get_agent_reachable_positions(controller: Controller) -> list[dict]:
     """Get the agent's reachable position in the scene."""
     return controller.step(action="GetReachablePositions").metadata["actionReturn"]
 
-def display_agent_reachable_position(controller: Controller):
+def display_agent_reachable_positions(controller: Controller):
     print("Agent's reachable positions:")
-    for pos in get_agent_reachable_position(controller):
+    for pos in get_agent_reachable_positions(controller):
         print(f"{pos}")
 
 def navigate_to(controller: Controller, target_position, steps = 60):
     """
     Interpolates the agent's position and camera to create a fluid motion.
     """
+
     agent = controller.last_event.metadata['agent']
     start_pos = agent['position']
     start_rot = agent['rotation']['y']
     start_hor = agent['cameraHorizon']
 
-    target_pos = {'x': target_position['x'], 'y': target_position['y'], 'z': target_position['z']}
     target_rot = target_position['rotation']
     target_hor = target_position['horizon']
 
@@ -60,9 +61,9 @@ def navigate_to(controller: Controller, target_position, steps = 60):
         t = i / steps # Calculate the percentage of completion (0.0 to 1.0)
         
         # Linear interpolation (Lerp) for X, Y, Z position
-        cur_x = start_pos['x'] + (target_pos['x'] - start_pos['x']) * t
-        cur_y = start_pos['y'] + (target_pos['y'] - start_pos['y']) * t
-        cur_z = start_pos['z'] + (target_pos['z'] - start_pos['z']) * t
+        cur_x = start_pos['x'] + (target_position['x'] - start_pos['x']) * t
+        cur_y = start_pos['y'] + (target_position['y'] - start_pos['y']) * t
+        cur_z = start_pos['z'] + (target_position['z'] - start_pos['z']) * t
         
         # Lerp for camera rotation and up/down horizon tilt
         cur_rot = start_rot + rot_diff * t
@@ -114,7 +115,7 @@ def reach_object(controller: Controller, object, obj_dist=0.6):
 
     obj_pos = object['position']
 
-    agent_poses = get_agent_reachable_position(controller)
+    agent_poses = get_agent_reachable_positions(controller)
 
     if not agent_poses:
         print("Agent can't move")
@@ -155,7 +156,7 @@ def get_object_type(object) -> str:
 def get_object_id(object : dict) -> str:
     return object['objectId']
 
-def find_object(controller: Controller, object_name: str):
+def find_object(controller: Controller, object_name: str) -> dict[str, str]:
     """Return the object with object_name reference in the scene if found, otherwise None"""
 
     if not object_name:
@@ -218,6 +219,8 @@ def get_visible_objects_around(controller: Controller):
 
     return objs
 
+# === TASK EXECUTION ===
+
 def execute_plan(controller: Controller, plan: list[str]):
     """Execute the plan in the Ai2Thor environment
     
@@ -226,10 +229,8 @@ def execute_plan(controller: Controller, plan: list[str]):
         plan: list of instructione that the embodied has to execute"""
     
     for step in plan:
-        parts = step.strip().split(" ", 1)
 
-        action = parts[0].lower().strip()
-        target = parts[1].lower().strip() if len(parts) > 1 else None
+        action, target = task.cmd_translation( step )
 
         if target:
             obj = find_object(controller, target)
@@ -242,76 +243,76 @@ def execute_plan(controller: Controller, plan: list[str]):
         print(f" -> {step} ")
 
         match action:
-            case "find":
+            case task.FIND:
                 reach_object(controller, obj)
 
-            case "pick":
+            case task.PICK:
                 pick_up_object(controller, obj)
 
-            case "put":
+            case task.PUT:
                 put_object(controller, obj)
 
-            case "drop":
+            case task.DROP:
                 drop_object(controller)
 
-            case "throw":
+            case task.THROW:
                 throw_object()
 
-            case "moveheldback":
+            case task.MOVEHELDBACK:
                 move_held_object_back()
 
-            case "moveheldleft":
+            case task.MOVEHELDLEFT:
                 move_held_object_left()
 
-            case "moveheldright":
+            case task.MOVEHELDRIGHT:
                 move_held_object_right()
 
-            case "moveheldup":
+            case task.MOVEHELDUP:
                 move_held_object_up()
 
-            case "movehelddown":
+            case task.MOVEHELDDOWN:
                 move_held_object_down()
 
-            case "pour":
+            case task.POUR:
                 rotate_held_object()
 
-            case "push":
+            case task.PUSH:
                 directional_push_object()
 
-            case "pull":
+            case task.PULL:
                 direction_pull_object()
 
-            case "open":
+            case task.OPEN:
                 open_object(controller, obj)
 
-            case "close":
+            case task.CLOSE:
                 close_object(controller, obj)
 
-            case "break":
+            case task.BREAK:
                 break_object()
 
-            case "cook":
+            case task.COOK:
                 cook_object()
 
-            case "slice":
+            case task.SLICE:
                 slice_object(controller, obj)
 
-            case "turnoon":
+            case task.TURNON:
                 toggle_object_on()
 
-            case "turnoff":
+            case task.TURNOFF:
                 toggle_object_off()
 
-            case "dirty":
+            case task.DIRTY:
                 dirty_object()
 
-            case "clean":
+            case task.CLEAN:
                 clean_object()
 
-            case "fillliquid":
+            case task.FILLLIQUID:
                 fill_object_with_liquid()
 
-            case "emptyliquid":
+            case task.EMPTYLIQUID:
                 empty_object_from_liquid()
 
             case _:
