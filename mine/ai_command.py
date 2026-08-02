@@ -5,80 +5,81 @@ from google import genai
 from google.genai import types
 import time
 import json
+import ai2_thor_task as task
 
 system_prompt = "You are a helpful assistant."
 
-action_explanation = """
-1. find obj:
+action_explanation = f"""
+1. {task.FIND} obj:
 Find the object and the agent will be close to the object. The object needs to be visible.
 
-2. pick obj:
+2. {task.PICK} obj:
 Pick up the object close to the agent. The object needs to be visible and the agent's hand must be clear of obstruction or the action will fail. Picked up objects can also obstruct the Agent's view of the environment since the Agent's hand is always in camera view, so know that picking up larger objects will obstruct the field of vision.
 
-3. put TargetReceptacle:
+3. {task.PUT} TargetReceptacle:
 Put down the object that the agent holds into the target receptacle. Note no need to specify the object name, the system will automatically detect the object the agent holds. The target receptacle needs to be visible and the agent needs to be close to the receptacle.
 
-4. open obj:
+4. {task.OPEN} obj:
 Open the openable object.
 
-5. close obj:
+5. {task.CLOSE} obj:
 Close the openable object.
 
-6. slice obj:
+6. {task.SLICE} obj:
 Slice the sliceable object directly if the agent is close to the object and need not to hold the object. The object will be turned into several new sliced objects called objSliced. But the egg will be broken if sliced.
 
-7. turnOn obj:
+7. {task.TURNON} obj:
 Turn on the toggleable object if the agent is close to the object.
 
-8. turnOff obj:
+8. {task.TURNOFF} obj:
 Turn off the toggleable object if the agent is close to the object.
 
-9. drop:
+9. {task.DROP}:
 Drop the pickable object the agent holds. If the object is breakable, the object will be broken after being dropped.
 
-10. throw:
+10. {task.THROW}:
 Throw the pickable object the agent holds. If the object is breakable, the object will be broken after being thrown.
 
-11. break obj:
+11. {task.BREAK} obj:
 Break the breakable object directly if the agent is close to the object and does not need to hold the object.
 
-12. pour:
+12. {task.POUR}:
 Rotate the pickable object the agent holds 90 degrees from the global upward axis. If an object is filled with one of the liquid types, the object will automatically empty itself because the liquid has “spilled.”
 
-13. cook obj:
+13. {task.COOK} obj:
 Cook the cookable object directly if the agent is close to the object and does not need to hold the object. If the cookable object interacts with objects that are heat sources, the object will be turned to the cooked state without using the cook action.
 
-14. dirty obj:
+14. {task.DIRTY} obj:
 Dirty the dirtyable object directly if the agent is close to the object and does not need to hold the object. 
 
-15. clean obj:
+15. {task.CLEAN} obj:
 Clean the dirty object directly if the agent is close to the object and does not need to hold the object. 
 
-16. fillLiquid obj water/coffee/wine:
+16. {task.FILLLIQUID} obj water/coffee/wine:
 Fill the fillable object with one type of liquid among water/coffee/wine if the agent is close to the object and does not need to hold the object.
 
-17. emptyLiquid obj:
+17. {task.EMPTYLIQUID} obj:
 Empty the filled object if the agent is close to the object and does not need to hold the object.
 
-18. moveHeldBack:
+18. {task.MOVEHELDBACK}:
 While the agent is holding an object, it moves the object closer to the agent body. This held object movement can be used to move the object closer to a surface
 
-19. moveHeldLeft:
+19. {task.MOVEHELDLEFT}:
 While the agent is holding an object, it moves the object on the left of the agent. This held object movement can be used to move an object closer to a surface
 
-20. moveHeldRight:
+20. {task.MOVEHELDRIGHT}:
 While the agent is holding an object, it moves the object on the right of the agent. This held object movement can be used to move an object closer to a surface
 
-21. moveHeldUp:
+21. {task.MOVEHELDUP}:
 While the agent is holding an object, it moves the object up in respect to the agent view. This held object movement can be used to move an object closer to a surface
 
-22. moveHeldDown:
+22. {task.MOVEHELDDOWN}:
 While the agent is holding an object, it moves the object down in respect to the agent view. This held object movement can be used to move an object closer to a surface
 
-23. push obj:
+23. {task.PUSH} obj:
 Push an object to a given direction.
 
-24. pull obj:
+24. {task.PULL} obj:
 Pull an object towards the ambodied.
 """
 
