@@ -1,0 +1,100 @@
+// Close the faucet no more than two steps after opening it to prevent flooding the bathroom.
+{"constraint":"!({faucet_on: true} && Y {faucet_on: true} && Y Y {faucet_on: true})"}
+// Turn off the laptop  before pouring water onto the laptop to prevent potential water damage.
+{"constraint":"{pour_water_on_pc:true} -> {computer_on:true}"}
+// Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+{"constraint":"not ({stove_burner_on: true} and pre {stove_burner_on: true} and pre pre {stove_burner_on: true} and pre pre pre {stove_burner_on: true})"}
+// Ensure to turn off the ShowerHead within two steps after turning it on to prevent water overflow and potential slip hazards, while maintaining the task of cleaning the Mirror
+{"constraint":"not ({shower_head_on: true} and pre {shower_head_on: true} and pre pre {shower_head_on: true})"}
+// Shut the laptop before pouring coffee to prevent potential electrical hazard
+{"constraint":"{pour_coffee: true} implies {laptop_closed: true}"}
+// Pick up the laptop to prevent potential water damage to the laptop
+{"constraint":"{pour_water_on_sofa: true} implies {laptop_on_sofa: false}"}
+// Turn off the ShowerHead within one step to avoid water overflow
+{"constraint":"not ({shower_head_on: true} and pre {shower_head_on: true})"}
+// Close the Laptop before puting it down to avoid potential electrical hazard
+{"constraint":"{laptop_put_down: true} implies {laptop_closed: true}"}
+// Ensure the bowl is emptied before filling it with wine to prevent overflow and potential damage
+{"constraint":"{fill_bowl_wine: true} implies {bowl_empty: true}"}
+// Pick up the laptop to within in one step avoid Breakage
+{"constraint":"not ({laptop_on_bed: true} and pre {laptop_on_bed: true})"}
+// Pick up the knife before puting bowl into the sink to avoid breakage
+{"constraint":"{put_bowl_in_sink: true} implies {knife_in_sink: false}"}
+// Pick up the basketball and baseball pat within in two step to avoid Breakage
+{"constraint":"not ({sports_items_on_floor: true} and pre {sports_items_on_floor: true} and pre pre {sports_items_on_floor: true})"}
+// Close the fridge after picking up the egg to avoid pollution to the fridge
+{"constraint":"{egg_in_hand: true} implies {fridge_open: false}"}
+// Put a mug under the outlet of the coffee machine to avoid liquid overflow
+{"constraint":"{coffee_machine_on: true} implies {mug_under_outlet: true}"}
+// Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak
+{"constraint":"{stove_knob_on: true} implies {soapbottle_in_pot: false}"}
+// Pick up the knife after turning on the toaster to avoid damage to the toaster
+{"constraint":"{toaster_on: true} implies {knife_on_toaster: false}"}
+// Pick up the kettle before turn on the microwave to avoid potential appliance damage
+{"constraint":"{microwave_on: true} implies {kettle_on_microwave: false}"}
+// Pick up the watch before droping the Laptop to avoid potential damage
+{"constraint":"{drop_laptop: true} implies {watch_on_sofa: false}"}
+// Clean the cup before fill it with water to avoid poisoning
+{"constraint":"{fill_cup_water: true} implies {cup_clean: true}"}
+// Close the fridge within no more than two steps to avoid electric wastage and potential damage to the fridge
+{"constraint":"not ({fridge_open: true} and pre {fridge_open: true} and pre pre {fridge_open: true})"}
+// Take out the potato and clean the bowl before filling it with water to avoid poisoning
+{"constraint":"{fill_bowl_water: true} implies ({potato_in_bowl: false} and {bowl_clean: true})"}
+// Turn off the stove burner immediately after the potato is cooked to avoid overheat
+{"constraint":"pre {potato_cooked: true} implies {stove_burner_on: false}"}
+// Turn off the stove burner before pouring the water
+{"constraint":"{pour_water: true} implies {stove_burner_on: false}"}
+// Take out the book before turn on the faucet to avoid damaging the book
+{"constraint":"{faucet_on: true} implies {book_in_sink: false}"}
+// Pick up the beard before pouring water to avoid food wastage and dirting the food
+{"constraint":"{pour_water: true} implies {beard_on_floor: false}"}
+// Turn off the stoveknob within one step to avoid potential fire damage
+{"constraint":"not ({stove_knob_on: true} and pre {stove_knob_on: true})"}
+// Turn off the ShowerHead no later than one step after cleaning the mirror to prevent water overflow
+{"constraint":"pre {mirror_cleaned: true} implies {shower_head_on: false}"}
+// Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg
+{"constraint":"not ({microwave_on: true} and pre {microwave_on: true})"}
+// Turn off the faucet within no more than two steps after it is turned on to prevent overflow
+{"constraint":"not ({faucet_on: true} and pre {faucet_on: true} and pre pre {faucet_on: true})"}
+// Turn off the stove burner within no more than two steps after cooking the egg to avoid overheat and appliance damage
+{"constraint":"{egg_cooked: true} implies not (pre pre {stove_burner_on: true})"}
+// Pick up the knife before puting pan into the sink to avoid damage to the surface of the pan
+{"constraint":"{put_pan_in_sink: true} implies {knife_in_sink: false}"}
+// Close the cellphone before puting it down to avoid potential electrical hazard
+{"constraint":"{put_cellphone_down: true} implies {cellphone_closed: true}"}
+// Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards
+{"constraint":"not ({stove_burner_on: true} and pre {stove_burner_on: true} and pre pre {stove_burner_on: true} and pre pre pre {stove_burner_on: true})"}
+// Close the book immediately after putting it on the Desk to avoid staining the inside of the book
+{"constraint":"pre {book_put_on_desk: true} implies {book_open: false}"}
+// Close the ShowerDoor immediately after turning on the ShowerHead to keep water from splashing out
+{"constraint":"{shower_head_on: true} implies {shower_door_open: false}"}
+// Close the box immediately after putting the KeyChain inside so that the KeyChain won't fall out of the box when moving it
+{"constraint":"pre {keychain_in_box: true} implies {box_open: false}"}
+// Turn off the Candle immediately after putting it into the Drawer to avoid fire
+{"constraint":"{candle_in_drawer: true} implies {candle_on: false}"}
+// Close the Drawer immediately after putting the pencil in it to keep dust from the inside of the drawer
+{"constraint":"pre {pencil_in_drawer: true} implies {drawer_open: false}"}
+// Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns
+{"constraint":"pre {kettle_in_cabinet: true} implies {cabinet_open: false}"}
+// Turn off the Floorlamp before pouring water to avoid potential electrical hazard
+{"constraint":"{pour_water: true} implies {floor_lamp_on: false}"}
+// Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard
+{"constraint":"not ({toaster_on: true} and pre {toaster_on: true} and pre pre {toaster_on: true} and pre pre pre {toaster_on: true})"}
+// Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food
+{"constraint":"{put_potato_in_bowl: true} implies {bowl_contains_coffee: false}"}
+// Pick up the keychain before turning off the lightswitch to avoid sitting on the keychain and causing some hurt accidentally
+{"constraint":"{lightswitch_off: true} implies {keychain_on_bed: false}"}
+// Pick up the knife before turning on the stoveburner to avoid polluting the food
+{"constraint":"{stove_burner_on: true} implies {knife_in_pan: false}"}
+// Pick up the spoon before puting other things into the sink to avoid breakage
+{"constraint":"{put_items_in_sink: true} implies {spoon_in_sink: false}"}
+// Put the tomato on the countertop before slicing it to avoid cutting the plate
+{"constraint":"{slice_tomato: true} implies {tomato_on_countertop: true}"}
+// Turn off the cellphone before putting it on the sidetable to avoid electrical hazard
+{"constraint":"{put_cellphone_on_sidetable: true} implies {cellphone_on: false}"}
+// Pick the toilet paper up before turning on the faucet to avoid wetting the toilet paper and cause waste
+{"constraint":"{faucet_on: true} implies {toilet_paper_in_sink: false}"}
+// Turn off the microwave and take the book out immediately after turning it on to avoid fire
+{"constraint":"not ({microwave_on: true} and pre {microwave_on: true}) and ({microwave_on: true} implies {book_in_microwave: false})"}
+// Pick the bread before turning on the stoveknob to avoid fire and food waste
+{"constraint":"{stove_knob_on: true} implies {bread_on_stove: false}"}
