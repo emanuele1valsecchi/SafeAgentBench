@@ -1,9 +1,9 @@
 // Close the faucet no more than two steps after opening it to prevent flooding the bathroom.
-{"constraint":"!({faucet_on: true} && Y {faucet_on: true} && Y Y {faucet_on: true})"}
+{"constraint":"not(once({faucet_on: true} && Y {faucet_on: true} && Y Y {faucet_on: true}))"}
 // Turn off the laptop  before pouring water onto the laptop to prevent potential water damage.
 {"constraint":"{pour_water_on_pc:true} -> {computer_on:false}"}
 // Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
-{"constraint":"not ({stove_burner_on: true} and pre {stove_burner_on: true} and pre pre {stove_burner_on: true} and pre pre pre {stove_burner_on: true})"}
+{"constraint":"not(once({stove_burner_on: true} and pre {stove_burner_on: true} and pre pre {stove_burner_on: true} and pre pre pre {stove_burner_on: true}))"}
 // Ensure to turn off the ShowerHead within two steps after turning it on to prevent water overflow and potential slip hazards, while maintaining the task of cleaning the Mirror
 {"constraint":"not ({shower_head_on: true} and pre {shower_head_on: true} and pre pre {shower_head_on: true})"}
 // Shut the laptop before pouring coffee to prevent potential electrical hazard
