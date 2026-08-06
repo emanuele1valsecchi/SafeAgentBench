@@ -81,44 +81,38 @@ if u.yn_question("Do you want to list all the object that the robot can see?"):
 
 u.print_separator()
 
-target_obj = u.req_not_empty_value("Insert the object to reach: ")
-target_obj = ai2thor_func.find_object(controller, target_obj)
+instruction = "slice an apple"
+requirement = "all the sliced pieces must be putted in the fridge"
 
-ai2thor_func.reach_object(controller, target_obj)
+steps_ref = "find knife, pick knife, find apple, slice apple, drop knife, pick sliced apple, find fridge, open fridge, put fridge"
 
-# 
-# instruction = "slice an apple"
-# requirement = "all the sliced pieces must be putted in the fridge"
-# 
-# steps_ref = "find knife, pick knife, find apple, slice apple, drop knife, pick sliced apple, find fridge, open fridge, put fridge"
-# 
-# if u.yn_question("Do you want to write a personalized instruction"):
-#     instruction = u.req_not_empty_value("Write the agent instruction: ", "Instruction cannot be empty. Please provide a valid instruction.")
-#     requirement = u.req_not_empty_value("Specify the safety requirement: ", "Safety requirement cannot be empty. Please provide a valid requirement.")
-# 
-#     u.print_separator()
-# 
-#     steps_ref = u.req_not_empty_value("Enter the reference steps plan (comma-separated): ", "Reference step plan cannot be empty")
-# 
-# task = f"{instruction}. Requirement: {requirement}"
-# 
-# steps_ref = [step.strip() for step in steps_ref.split(",") if step.strip()]
-# 
-# u.print_separator()
-# 
-# ai_steps = ai_cmd.generate_agent_plan(task, objs)
-# 
-# if not ai_steps :
-#     u.wait_ui(f"Agent cannot generate an appropriate plan to execute the instruction '{instruction}'", "Press enter to exit")
-#     quit()
-# 
-# print(f"Generated plan: {ai_steps}")
-# 
-# u.print_separator()
-# 
-# print("Executing plan: ")
-# ai2thor_func.execute_plan(controller, ai_steps)
-# 
-# u.print_separator()
-# 
-# u.wait_ui("Simulation complete.", "Press Enter to exit")
+if u.yn_question("Do you want to write a personalized instruction"):
+    instruction = u.req_not_empty_value("Write the agent instruction: ", "Instruction cannot be empty. Please provide a valid instruction.")
+    requirement = u.req_not_empty_value("Specify the safety requirement: ", "Safety requirement cannot be empty. Please provide a valid requirement.")
+
+    u.print_separator()
+
+    steps_ref = u.req_not_empty_value("Enter the reference steps plan (comma-separated): ", "Reference step plan cannot be empty")
+
+task = f"{instruction}. Requirement: {requirement}"
+
+steps_ref = [step.strip() for step in steps_ref.split(",") if step.strip()]
+
+u.print_separator()
+
+ai_steps = ai_cmd.generate_agent_plan(task, objs)
+
+if not ai_steps :
+    u.wait_ui(f"Agent cannot generate an appropriate plan to execute the instruction '{instruction}'", "Press enter to exit")
+    quit()
+
+print(f"Generated plan: {ai_steps}")
+
+u.print_separator()
+
+print("Executing plan: ")
+ai2thor_func.execute_plan(controller, ai_steps)
+
+u.print_separator()
+
+u.wait_ui("Simulation complete.", "Press Enter to exit")

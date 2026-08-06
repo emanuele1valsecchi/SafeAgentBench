@@ -397,9 +397,12 @@ def execute_plan(controller: Controller, plan: list[str]):
         time.sleep(SLEEP_BETWEEN_STEPS)
 
 def reach_object(controller : Controller, obj : dict[str, str]):
-    closest_position, rotation_angle, horizon_angle = get_object_closest_position(controller, obj)
+    closest_position = get_object_closest_position(controller, obj)
 
-    input(f"\nAgent initial position: {controller.last_event.metadata['agent']['position']}\nTarget position: {closest_position}\n")
+    if not closest_position:
+        return
+
+    closest_position, rotation_angle, horizon_angle = closest_position
 
     path = get_path_to_position(controller, closest_position)
 
