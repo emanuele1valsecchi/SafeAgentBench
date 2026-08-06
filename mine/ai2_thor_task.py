@@ -33,3 +33,6 @@ def cmd_translation( command: str ) -> tuple[str]:
     target = parts[1].lower().strip() if len(parts) > 1 else None
 
     return action, target
+
+def cmd_in_action( command : str ) -> bool:
+    return command in agent_action
