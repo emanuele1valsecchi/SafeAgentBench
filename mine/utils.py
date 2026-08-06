@@ -33,3 +33,7 @@ def wait_ui(text : str = "", end_message: str = "Press enter to continue"):
         input (f"{text}\n\n{end_message}")
     else:
         input(f"{text}")
+
+def quit_program(text : str = "", end_message: str = "Press enter to close the program"):
+    wait_ui(text, end_message)
+    quit()
