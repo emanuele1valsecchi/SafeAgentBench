@@ -84,10 +84,7 @@ u.print_separator()
 target_obj = u.req_not_empty_value("Insert the object to reach: ")
 target_obj = ai2thor_func.find_object(controller, target_obj)
 
-if not ai2thor_func.reach_object(controller, target_obj):
-    u.quit_program("Object cannot be reached")
-
-u.quit_program("Object reached")
+ai2thor_func.reach_object(controller, target_obj)
 
 # 
 # instruction = "slice an apple"

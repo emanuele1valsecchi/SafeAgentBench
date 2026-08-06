@@ -6,10 +6,12 @@ import time
 import numpy as np
 from scipy import spatial
 import math
+import networkx as nx
 
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
 CAMERA_HEIGHT_OFFSET = 0.675
+TARGET_MAX_DISTANCE = 1.0
 
 # === CREATION ===
 def create_controller(agentMode = "default", visibilityDistance = 100, scene = "FloorPlan1", 
@@ -114,28 +116,36 @@ def rotate_agent_right_smoothly(controller: Controller, total_degrees=90, step=1
 def get_kdtree_reachable_positions(agent_reachable_positions : list[dict]) -> spatial._kdtree.KDTree:
     return spatial.KDTree(np.array([[p['x'], p['y'], p['z']] for p in agent_reachable_positions]))
 
-def get_closest_obj_reachable_position(agent_reachable_positions : list[dict], object_position : dict, nth : int = 1) -> dict:
+def get_closest_reachable_position(agent_reachable_positions : list[dict], target_position : dict, nth : int = 1) -> dict:
     kdtree_reachable_positions = get_kdtree_reachable_positions(agent_reachable_positions)
-    _, i = kdtree_reachable_positions.query([object_position['x'], object_position['y'], object_position['z']], k = nth + 1)
+    _, i = kdtree_reachable_positions.query([target_position['x'], target_position['y'], target_position['z']], k = nth + 1)
     return agent_reachable_positions[(i[nth - 1])]
 
-def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=1.0) -> bool:
+def is_object_close(target : dict[str, str], target_max_dist = TARGET_MAX_DISTANCE) -> bool:
+    return target['visible'] and target['distance'] < target_max_dist
+
+def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=TARGET_MAX_DISTANCE) -> tuple[dict, float, float] | None:
     """
-    
+    Based on a target provided evaluates the closesest position and camera rotation near the object
+
+    Args:
+        controller: Ai2THOR controller
+        target: the target object obtained by the controller metadata
+        target_max_dist: the maximum distance that the agent has to have to the object
+
     Returns:
-        bool: True if the object is reached by the agent
+        tuple[dict, float, float]: Containing the closest position to the object, the rotation and horizon that the agent has to have to be close to the object and look at it
+        None: if the agent can't move, shouldn't move (the object is already close and visible) an error occurred
     """
 
     agent_rpos = get_agent_reachable_positions(controller)
-    if not agent_rpos:
-        print("Agent can't move")
-        return False
+    if not agent_rpos: # Agent can't move
+        return None
     
     target_pos = target['position'] #dict
 
-    if target['visible'] and target['distance'] < target_max_dist:
-        print(f"'{target['name']}' is already close")
-        return True
+    if is_object_close(target): # Agent is already close to the object
+        return None
 
     reachable_pos_idx = 0
 
@@ -151,7 +161,7 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
         if i == 2 and (get_object_type(target) == 'Fridge' or get_object_type(target) == 'Microwave'):
             reachable_pos_idx -= 2
 
-        clos_pos = get_closest_obj_reachable_position(agent_rpos, target_pos, reachable_pos_idx)
+        clos_pos = get_closest_reachable_position(agent_rpos, target_pos, reachable_pos_idx)
 
         # Evaluate desired rotation angle (see https://github.com/allenai/ai2thor/issues/806)
         rot_angle = math.atan2(-(target_pos['x'] - clos_pos['x']), target_pos['z'] - clos_pos['z'])
@@ -167,25 +177,33 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
         hor_angle = (180 / math.pi) * hor_angle  # in degrees
         hor_angle *= 0.9  # adjust angle for better view
 
-        controller.step(    action = "Teleport",
-                            x = clos_pos['x'],
-                            y = clos_pos['y'],
-                            z = clos_pos['z'],
-                            rotation = rot_angle,
-                            horizon = -hor_angle,
-                            standing = True)
+        return clos_pos, rot_angle, -hor_angle
 
-        # If the object is reached stop the execution
-        if controller.last_event.metadata['lastActionSuccess']:
-            controller.step( action = "Done" ) # Update the graphical execution in Ai2THOR
+    return None
 
-            for obj in get_objects_in_scene(controller):
-                if get_object_id(obj) == get_object_id(target):
-                    if obj['distance'] < target_max_dist:
-                        return True
+def get_path_to_position(controller : Controller, target_position : dict[str, str], max_distance = TARGET_MAX_DISTANCE) -> list[dict]:
+    agent_rpos = get_agent_reachable_positions(controller)
 
-    return False
-    
+    if not agent_rpos: #Agent can't move
+        return None
+
+    agent_position = get_agent_position(controller)
+
+    path = []
+
+    reachable_pos_idx = 0
+
+    for pos in agent_rpos:
+        reachable_pos_idx += 1
+
+        if (abs(agent_position['x'] - target_position['x']) < max_distance and abs(agent_position['z'] - target_position['z']) < max_distance):
+            return path 
+        else:
+            target_position = get_closest_reachable_position(agent_rpos, target_position, reachable_pos_idx)
+            path.append(target_position)
+
+    return None
+
 # === OBJECTS ===
 def get_object_type(object) -> str:
     return object['objectType']
@@ -356,6 +374,16 @@ def execute_plan(controller: Controller, plan: list[str]):
                 print(f"Action '{action}' not allowed")
         
         time.sleep(SLEEP_BETWEEN_STEPS)
+
+def reach_object(controller : Controller, obj : dict[str, str]):
+    closest_position, rotation_angle, horizon_angle = get_object_closest_position(controller, obj)
+
+    input(f"\nAgent initial position: {controller.last_event.metadata['agent']['position']}\nTarget position: {closest_position}\n")
+
+    path = get_path_to_position(controller, closest_position)
+
+    for p in reversed(path):
+        print(p)
 
 def pick_up_object(controller: Controller, object : dict):
     controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
