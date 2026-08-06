@@ -181,28 +181,49 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
 
     return None
 
-def get_path_to_position(controller : Controller, target_position : dict[str, str], max_distance = TARGET_MAX_DISTANCE) -> list[dict]:
-    agent_rpos = get_agent_reachable_positions(controller)
+def build_navigation_graph(reachable_positions : list[dict], grid_size: float = 0.1) -> nx.Graph:
+    """Builds a navigable graph from AI2-THOR reachable positions."""
+    graph = nx.Graph()
+    
+    # 1. Add all points as nodes (using rounded tuples as unique keys)
+    for p in reachable_positions:
+        node_id = (p['x'], p['y'], p['z'])
+        graph.add_node(node_id, pos=p)
+        
+    # 2. Connect adjacent nodes
+    nodes = list(graph.nodes)
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            n1, n2 = nodes[i], nodes[j]
+            # Calculate distance on the X/Z plane (ignore Y height)
+            dist = math.dist([n1[0], n1[2]], [n2[0], n2[2]])
+            
+            # If points are next to each other (allowing for small float inaccuracies)
+            if dist <= grid_size * 1.1:
+                graph.add_edge(n1, n2, weight=dist)
+                
+    return graph
 
-    if not agent_rpos: #Agent can't move
-        return None
+def get_path_to_position(controller: Controller, target_position: dict) -> list[dict]:
+    """Finds the shortest path on the custom graph."""
 
-    agent_position = get_agent_position(controller)
+    agent_pos = get_agent_position(controller)
 
-    path = []
+    start_node = (agent_pos['x'], agent_pos['y'], agent_pos['z'])
+    target_node = (target_position['x'], target_position['y'], target_position['z'])
 
-    reachable_pos_idx = 0
-
-    for pos in agent_rpos:
-        reachable_pos_idx += 1
-
-        if (abs(agent_position['x'] - target_position['x']) < max_distance and abs(agent_position['z'] - target_position['z']) < max_distance):
-            return path 
-        else:
-            target_position = get_closest_reachable_position(agent_rpos, target_position, reachable_pos_idx)
-            path.append(target_position)
-
-    return None
+    graph = build_navigation_graph(get_agent_reachable_positions(controller))
+    
+    try:
+        # Calculate A* path
+        path_nodes = nx.astar_path(graph, start_node, target_node)
+        
+        # Convert back to AI2-THOR dictionaries
+        return [graph.nodes[n]['pos'] for n in path_nodes]
+    
+    except nx.NetworkXNoPath:
+        print("No reachable path exists between these points.")
+        return []
 
 # === OBJECTS ===
 def get_object_type(object) -> str:
@@ -382,8 +403,16 @@ def reach_object(controller : Controller, obj : dict[str, str]):
 
     path = get_path_to_position(controller, closest_position)
 
-    for p in reversed(path):
-        print(p)
+    for p in path:
+        controller.step(
+            action = "TeleportFull",
+            position = p,
+            rotation = rotation_angle,
+            horizon = horizon_angle,
+            standing = True
+        )
+
+        controller.step(action = "Done")
 
 def pick_up_object(controller: Controller, object : dict):
     controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
