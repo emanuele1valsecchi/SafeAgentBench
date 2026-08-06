@@ -3,10 +3,13 @@
 from ai2thor.controller import Controller
 import ai2_thor_task as task
 import time
+import numpy as np
+from scipy import spatial
 import math
 
 # === DEFAULT VALUES ===
-sleep_between_steps = 0.0001
+SLEEP_BETWEEN_STEPS = 0.0001
+CAMERA_HEIGHT_OFFSET = 0.675
 
 # === CREATION ===
 def create_controller(agentMode = "default", visibilityDistance = 100, scene = "FloorPlan1", 
@@ -32,14 +35,12 @@ def create_controller(agentMode = "default", visibilityDistance = 100, scene = "
     )
 
 # === POSITION ===
+def get_agent_position(controller : Controller) -> dict:
+    return controller.last_event.metadata['agent']['position']
+
 def get_agent_reachable_positions(controller: Controller) -> list[dict]:
     """Get the agent's reachable position in the scene."""
     return controller.step(action="GetReachablePositions").metadata["actionReturn"]
-
-def display_agent_reachable_positions(controller: Controller):
-    print("Agent's reachable positions:")
-    for pos in get_agent_reachable_positions(controller):
-        print(f"{pos}")
 
 def navigate_to(controller: Controller, target_position, steps = 60):
     """
@@ -77,7 +78,7 @@ def navigate_to(controller: Controller, target_position, steps = 60):
             horizon=cur_hor,
             forceAction=True  # Ensure the teleport goes through, replacing 'standing'
         )
-        time.sleep(sleep_between_steps)
+        time.sleep(SLEEP_BETWEEN_STEPS)
 
 # === AGENT MOVEMENT ===
 def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, step = 10):
@@ -102,7 +103,7 @@ def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, s
         remaining -= step
 
         if remaining > 0:
-            time.sleep(sleep_between_steps)
+            time.sleep(SLEEP_BETWEEN_STEPS)
 
 def rotate_agent_left_smoothly(controller: Controller, total_degrees=90, step=10):
     rotate_agent_smoothly(controller, "left", total_degrees, step)
@@ -110,45 +111,81 @@ def rotate_agent_left_smoothly(controller: Controller, total_degrees=90, step=10
 def rotate_agent_right_smoothly(controller: Controller, total_degrees=90, step=10):
     rotate_agent_smoothly(controller, "right", total_degrees, step)
 
-def reach_object(controller: Controller, object, obj_dist=0.6):
-    """Search for the object in the scene and evaluate the distance that the robot has to move in order to reach the object"""
+def get_kdtree_reachable_positions(agent_reachable_positions : list[dict]) -> spatial._kdtree.KDTree:
+    return spatial.KDTree(np.array([[p['x'], p['y'], p['z']] for p in agent_reachable_positions]))
 
-    obj_pos = object['position']
+def get_closest_obj_reachable_position(agent_reachable_positions : list[dict], object_position : dict, nth : int = 1) -> dict:
+    kdtree_reachable_positions = get_kdtree_reachable_positions(agent_reachable_positions)
+    _, i = kdtree_reachable_positions.query([object_position['x'], object_position['y'], object_position['z']], k = nth + 1)
+    return agent_reachable_positions[(i[nth - 1])]
 
-    agent_poses = get_agent_reachable_positions(controller)
-
-    if not agent_poses:
-        print("Agent can't move")
-        return
+def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=1.0) -> bool:
+    """
     
-    best_pose = None
-    best_diff = float('inf')
+    Returns:
+        bool: True if the object is reached by the agent
+    """
 
-    for pose in agent_poses:
-        dist = math.sqrt( (pose['x'] - obj_pos['x']) ** 2 + 
-                          (pose['z'] - obj_pos['z']) ** 2 )
-        diff = abs(dist - obj_dist)
+    agent_rpos = get_agent_reachable_positions(controller)
+    if not agent_rpos:
+        print("Agent can't move")
+        return False
+    
+    target_pos = target['position'] #dict
 
-        if diff < best_diff:
-            best_diff = diff
-            best_pose = pose
+    if target['visible'] and target['distance'] < target_max_dist:
+        print(f"'{target['name']}' is already close")
+        return True
 
-    if not best_pose:
-        print(f"No valid path to reach {get_object_type(object)}")
+    reachable_pos_idx = 0
 
-    if best_pose:
-        # Calculate rotation so the robot faces the object
-        dx = obj_pos['x'] - best_pose['x']
-        dz = obj_pos['z'] - best_pose['z']
-        yaw = (math.degrees(math.atan2(dx, dz))) % 360
-        
-        # Set up the target pose for our smooth_navigate function
-        best_pose['rotation'] = yaw
-        best_pose['horizon'] = 30  # Look down slightly at the object
-        best_pose['standing'] = True
+    max_attempts = 20
 
-        navigate_to(controller, best_pose)
+    if get_object_type(target) == 'Fridge' or get_object_type(target) == 'Microwave':
+        target_max_dist *= 2
 
+    # Try mutliple times to execute teleport (it can happen that it doesn't work)
+    for i in range(max_attempts):
+        reachable_pos_idx += 1
+
+        if i == 2 and (get_object_type(target) == 'Fridge' or get_object_type(target) == 'Microwave'):
+            reachable_pos_idx -= 2
+
+        clos_pos = get_closest_obj_reachable_position(agent_rpos, target_pos, reachable_pos_idx)
+
+        # Evaluate desired rotation angle (see https://github.com/allenai/ai2thor/issues/806)
+        rot_angle = math.atan2(-(target_pos['x'] - clos_pos['x']), target_pos['z'] - clos_pos['z'])
+        if rot_angle > 0:
+            rot_angle -= 2 * math.pi
+
+        rot_angle = -(180 / math.pi) * rot_angle  # in degrees
+
+        # Evaluate the desired horizon angle
+        camera_height = controller.last_event.metadata['agent']['position']['y'] + CAMERA_HEIGHT_OFFSET
+        xz_dist = math.hypot(target_pos['x'] - clos_pos['x'], target_pos['z'] - clos_pos['z'])
+        hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
+        hor_angle = (180 / math.pi) * hor_angle  # in degrees
+        hor_angle *= 0.9  # adjust angle for better view
+
+        controller.step(    action = "Teleport",
+                            x = clos_pos['x'],
+                            y = clos_pos['y'],
+                            z = clos_pos['z'],
+                            rotation = rot_angle,
+                            horizon = -hor_angle,
+                            standing = True)
+
+        # If the object is reached stop the execution
+        if controller.last_event.metadata['lastActionSuccess']:
+            controller.step( action = "Done" ) # Update the graphical execution in Ai2THOR
+
+            for obj in get_objects_in_scene(controller):
+                if get_object_id(obj) == get_object_id(target):
+                    if obj['distance'] < target_max_dist:
+                        return True
+
+    return False
+    
 # === OBJECTS ===
 def get_object_type(object) -> str:
     return object['objectType']
@@ -318,7 +355,7 @@ def execute_plan(controller: Controller, plan: list[str]):
             case _:
                 print(f"Action '{action}' not allowed")
         
-        time.sleep(sleep_between_steps)
+        time.sleep(SLEEP_BETWEEN_STEPS)
 
 def pick_up_object(controller: Controller, object : dict):
     controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
