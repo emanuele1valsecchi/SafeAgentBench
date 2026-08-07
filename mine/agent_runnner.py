@@ -1,6 +1,5 @@
 
 import json
-import time
 import ai2_thor_functionalities as ai2thor_func
 import ai_command as ai_cmd
 import utils as u
@@ -72,11 +71,11 @@ u.print_separator()
 controller = ai2thor_func.create_controller(scene=chosen_scene, width = 1280, height = 720)
 
 print("Agent scanning the ambient...")
-objs = ai2thor_func.get_visible_objects_around(controller)
+objs = ai2thor_func.get_objects_around(controller)
 
 u.print_separator()
 
-if u.yn_question("Do you want to list all the object that the robot can see?"):
+if u.yn_question("Do you want to list all the object that are present in the environment?"):
     ai2thor_func.display_objects(objs, "objectType")
 
 u.print_separator()

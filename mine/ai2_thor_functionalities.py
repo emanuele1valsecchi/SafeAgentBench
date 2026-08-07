@@ -215,10 +215,10 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
         return path_nodes[1:]
     
     except nx.NetworkXNoPath:
-        print("No reachable path exists between these points.")
         return []
 
 # === OBJECTS ===
+
 def get_object_type(object) -> str:
     return object['objectType']
 
@@ -255,17 +255,26 @@ def filter_objects_for(objects : list, **kwargs) -> list:
 
     return fobjs
 
-def get_objects_in_scene(controller: Controller, **kwargs):
-    """Get objects in scene, if **kwargs is passed only the one respecting 'key:value' are returned.\n 
-    If no object respects the filter 'key:value' an emtpy list is returned\n
-    In case that the specified key:value is not valid, an empty list is returned"""
+def get_objects_in_scene(controller: Controller, **kwargs) -> list[dict]:
+    """Access the scene metadata to scan for objects
+        
+        Args:
+            controller: the Ai2THOR controller
+            kwargs: can be None or a couple 'key:value'. If it is passed only the objects respecting 'key:value' are returned.\n 
+                    If no object respects the filter 'key:value' an emtpy list is returned\n
+                    In case that the specified key:value is not valid, an empty list is returned
+            
+        Returns:
+            list: containing all the objects in the scene"""
+
+    objects = controller.last_event.metadata['objects']
 
     if not kwargs:
-        return controller.last_event.metadata["objects"]
+        return objects
 
-    return filter_objects_for(controller.last_event.metadata["objects"], **kwargs)
+    return filter_objects_for(objects, **kwargs)
 
-def display_objects(objects, *args: str):
+def display_objects(objects : list[dict], *args: str):
     """Display objects.\n
     Optionally specified the object characteristic to show in args\n"""
 
@@ -282,14 +291,22 @@ def display_objects(objects, *args: str):
 def get_visible_objects_in_scene(controller: Controller):
     return get_objects_in_scene(controller, visible=True)
 
-def get_visible_objects_around(controller: Controller):
-    objs = []
+def get_objects_around(controller: Controller, **kwargs):
+    """Returns the object in the scene and perform a fake scanning of the ambient to simulate the agent scanning the are
+
+    Args:
+        controller: the Ai2THOR controller
+        kwargs: can be None or a couple 'key:value'. If it is passed only the objects respecting 'key:value' are returned.\n 
+                If no object respects the filter 'key:value' an emtpy list is returned\n
+                In case that the specified key:value is not valid, an empty list is returned
+    """
+    objs = get_objects_in_scene(controller, **kwargs)
 
     for i in range(4):
-        objs.extend(get_visible_objects_in_scene(controller))
         rotate_agent_left_smoothly(controller)
 
     return objs
+
 
 # === TASK EXECUTION ===
 
@@ -415,19 +432,10 @@ def reach_object(controller : Controller, obj : dict[str, str]):
 
         closest_position, rotation_angle, horizon_angle = get_object_closest_position(controller, obj, nth)
 
-        print(f"{obj['name']} - closest Position: {closest_position}")
-
         if (not closest_position):
             return
 
         path = get_path_to_position(controller, closest_position)
-
-        print(f"Agent position: {get_agent_position(controller)}\nPath:")
-
-        for p in path:
-            print(f"{p}")
-
-        input()
 
         for p in path:
             controller.step(
@@ -439,8 +447,6 @@ def reach_object(controller : Controller, obj : dict[str, str]):
             )
 
             if not controller.last_event.metadata['lastActionSuccess']:
-                print(f"\n\nError in teleporting: {controller.last_event.metadata['errorMessage']}\n")
-
                 if i == 10 :
                     nth -= 10
                 else:
@@ -452,6 +458,8 @@ def reach_object(controller : Controller, obj : dict[str, str]):
             break
 
 def pick_up_object(controller: Controller, object : dict):
+
+
     controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
 
 def put_object(controller: Controller, object: dict):
