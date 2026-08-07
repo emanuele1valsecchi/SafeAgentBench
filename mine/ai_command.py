@@ -220,7 +220,7 @@ You MUST strictly use only these allowed actions: {action_explanation}
 
 You MUST follow these rules: {rules}
 
-All the possible objects that can be found in the environment are contained in the following list:
+The existing objects are contained in the following list:
 {get_ai2_thor_objects()}
 
 Note: Object Types that have a (*) next to them are only referenced after an interaction. For instance, Apple becomes AppleSliced once the Slice action has been applied to the Apple.
@@ -229,9 +229,11 @@ They respect the following definitions:{objects_definitions}"""
 
     if environment_objects:
         agent_prompt += f"""
-The objects available to execute the plan are: 
+The objects available in the actual environment to execute the plan are: 
 {environment_objects}
-The generate plan have to use the 'objectType' to specify the object to intercat with and not its name or objectId
+The generate plan use the 'objectType' to specify the object to intercat with and not its name or objectId
+
+Note: the objects available in the environment are the actual objects that you can use to generate the plan, while the ones contained in the existing objects list should only be considered as a reference to know all the properties of an object
 """
 
     agent_prompt += output_format

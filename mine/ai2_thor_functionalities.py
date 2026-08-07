@@ -7,6 +7,7 @@ import numpy as np
 from scipy import spatial
 import math
 import networkx as nx
+import re
 
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
@@ -14,7 +15,7 @@ CAMERA_HEIGHT_OFFSET = 0.675
 TARGET_MAX_DISTANCE = 1.0
 
 # === CREATION ===
-def create_controller(agentMode = "default", visibilityDistance = 100, scene = "FloorPlan1", 
+def create_controller(agentMode = "default", visibilityDistance = 1.5, scene = "FloorPlan1", 
                       gridSize = 0.1, snapToGrid = False, rotationStepDegrees = 1,
                       renderDepthImage = True, renderInstanceSegmentation = True, 
                       width = 1280, height = 720, fieldOfView = 90):
@@ -216,6 +217,26 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
     
     except nx.NetworkXNoPath:
         return []
+
+def get_exception_from_metadata( controller : Controller ) -> dict:
+    # ^(?P<exception>[^:]+)       -> Captures from the start until the first colon
+    # :\s*(?P<message>.*?)        -> Captures the main message lazily
+    # (?:\.\.?\s*trace:|\s*trace:) -> Handles the "trace:" delimiter (and the double dots AI2-THOR sometimes outputs)
+    # \s*(?P<trace>.*)            -> Captures the rest of the multiline string as the stack trace
+    pattern = re.compile(
+        r"^(?P<exception>[^:]+):\s*(?P<message>.*?)(?:\.\.?\s*trace:|\s*trace:)\s*(?P<trace>.*)", 
+        re.DOTALL | re.IGNORECASE
+    )
+    
+    match = pattern.search(controller.last_event.metadata['errorMessage'])
+    
+    if match:
+        return {
+            "Exception": match.group("exception").strip(),
+            "Message": match.group("message").strip(),
+            "Trace": match.group("trace").strip()
+        }
+    return None
 
 # === OBJECTS ===
 
@@ -447,10 +468,27 @@ def reach_object(controller : Controller, obj : dict[str, str]):
             )
 
             if not controller.last_event.metadata['lastActionSuccess']:
+
+                exception = get_exception_from_metadata(controller)
+                if (exception['Exception'] == 'InvalidOperationException' and exception['Message'].lower().startswith("collided")):
+
+                    for j in range(1,max_attempts):
+                        free_position = get_closest_reachable_position(get_agent_reachable_positions(controller), get_agent_position(controller), j)
+                    
+                        controller.step(
+                            action = "Teleport",
+                            position = free_position,
+                            standing = True
+                        )
+
+                        if controller.last_event.metadata['lastActionSuccess']:
+                            break
+                
                 if i == 10 :
                     nth -= 10
                 else:
                     nth += 1
+                
                 break
             else:
                 controller.step(action = "Done")

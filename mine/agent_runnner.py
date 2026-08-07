@@ -107,6 +107,8 @@ if not ai_steps :
 
 print(f"Generated plan: {ai_steps}")
 
+#ai_steps = ['find drawer', 'open drawer', 'find knife', 'pick knife', 'find apple', 'slice apple', 'drop', 'find fridge', 'open fridge', 'find applesliced', 'pick applesliced', 'find fridge', 'put fridge', 'find applesliced', 'pick applesliced', 'find fridge', 'put fridge', 'close fridge']
+
 u.print_separator()
 
 print("Executing plan: ")
