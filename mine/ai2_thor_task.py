@@ -26,13 +26,24 @@ CLEAN = agent_action[21]
 FILLLIQUID = agent_action[22]
 EMPTYLIQUID = agent_action[23]
 
-def cmd_translation( command: str ) -> tuple[str]:
-    parts = command.strip().split(" ", 1)
-    
-    action = parts[0].lower().strip()
-    target = parts[1].lower().strip() if len(parts) > 1 else None
+def get_action_from_cmd( command : str ) -> str:
+    return command.strip().split(" ", 1)[0].lower().strip()
 
-    return action, target
+def get_subjects_from_cmd( command : str, multiple_subjects = False) -> str | tuple[str]:
+    subject = command.strip().split(" ")[1:]
 
-def cmd_in_action( command : str ) -> bool:
-    return command in agent_action
+    ret = ""
+
+    if not multiple_subjects:
+        if len(subject) == 1:
+            return subject[0].strip()
+
+        for s in subject:
+            ret += s
+
+        return ret
+
+    return subject
+        
+def is_action( action : str ) -> bool:
+    return action in agent_action

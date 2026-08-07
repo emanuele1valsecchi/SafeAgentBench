@@ -124,7 +124,7 @@ def get_closest_reachable_position(agent_reachable_positions : list[dict], targe
 def is_object_close(target : dict[str, str], target_max_dist = TARGET_MAX_DISTANCE) -> bool:
     return target['visible'] and target['distance'] < target_max_dist
 
-def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=TARGET_MAX_DISTANCE) -> tuple[dict, float, float] | None:
+def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=TARGET_MAX_DISTANCE, nth = 1) -> tuple[dict, float, float] | None:
     """
     Based on a target provided evaluates the closesest position and camera rotation near the object
 
@@ -132,6 +132,7 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
         controller: Ai2THOR controller
         target: the target object obtained by the controller metadata
         target_max_dist: the maximum distance that the agent has to have to the object
+        nth: represent the 'yet another' closest point. By default, nth=1 means "give me the #1 closest point." If a spot is blocked, you could pass nth=2 to get the 2nd closest point, and so on
 
     Returns:
         tuple[dict, float, float]: Containing the closest position to the object, the rotation and horizon that the agent has to have to be close to the object and look at it
@@ -140,46 +141,36 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
 
     agent_rpos = get_agent_reachable_positions(controller)
     if not agent_rpos: # Agent can't move
-        return None
+        return None, None, None
     
-    target_pos = target['position'] #dict
+    target_pos = target['position'] # dict
 
     if is_object_close(target): # Agent is already close to the object
-        return None
+        return None, None, None
 
-    reachable_pos_idx = 0
+    clos_pos = get_closest_reachable_position(agent_rpos, target_pos, nth)
+    
+    # Evaluate desired rotation angle (see https://github.com/allenai/ai2thor/issues/806)
+    rot_angle = math.atan2(-(target_pos['x'] - clos_pos['x']), target_pos['z'] - clos_pos['z'])
+    if rot_angle > 0:
+        rot_angle -= 2 * math.pi
 
-    max_attempts = 20
+    rot_angle = -(180 / math.pi) * rot_angle  # in degrees
 
-    if get_object_type(target) == 'Fridge' or get_object_type(target) == 'Microwave':
-        target_max_dist *= 2
+    # Evaluate the desired horizon angle
+    camera_height = controller.last_event.metadata['agent']['position']['y'] + CAMERA_HEIGHT_OFFSET
+    xz_dist = math.hypot(target_pos['x'] - clos_pos['x'], target_pos['z'] - clos_pos['z'])
+    hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
+    hor_angle = (180 / math.pi) * hor_angle  # in degrees
+    hor_angle *= 0.9  # adjust angle for better view
+    hor_angle = -hor_angle # adjusting the direction that is the opposite of the one evaluated
 
-    # Try mutliple times to execute teleport (it can happen that it doesn't work)
-    for i in range(max_attempts):
-        reachable_pos_idx += 1
+    if hor_angle < -30:
+        hor_angle = -30
+    elif hor_angle > 60:
+        hor_angle = 60
 
-        if i == 2 and (get_object_type(target) == 'Fridge' or get_object_type(target) == 'Microwave'):
-            reachable_pos_idx -= 2
-
-        clos_pos = get_closest_reachable_position(agent_rpos, target_pos, reachable_pos_idx)
-
-        # Evaluate desired rotation angle (see https://github.com/allenai/ai2thor/issues/806)
-        rot_angle = math.atan2(-(target_pos['x'] - clos_pos['x']), target_pos['z'] - clos_pos['z'])
-        if rot_angle > 0:
-            rot_angle -= 2 * math.pi
-
-        rot_angle = -(180 / math.pi) * rot_angle  # in degrees
-
-        # Evaluate the desired horizon angle
-        camera_height = controller.last_event.metadata['agent']['position']['y'] + CAMERA_HEIGHT_OFFSET
-        xz_dist = math.hypot(target_pos['x'] - clos_pos['x'], target_pos['z'] - clos_pos['z'])
-        hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
-        hor_angle = (180 / math.pi) * hor_angle  # in degrees
-        hor_angle *= 0.9  # adjust angle for better view
-
-        return clos_pos, rot_angle, -hor_angle
-
-    return None
+    return clos_pos, rot_angle, hor_angle
 
 def build_navigation_graph(reachable_positions : list[dict], grid_size: float = 0.1) -> nx.Graph:
     """Builds a navigable graph from AI2-THOR reachable positions."""
@@ -219,7 +210,9 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
         path_nodes = nx.astar_path(graph, start_node, target_node)
         
         # Convert back to AI2-THOR dictionaries
-        return [graph.nodes[n]['pos'] for n in path_nodes]
+        path_nodes = [graph.nodes[n]['pos'] for n in path_nodes]
+
+        return path_nodes[1:]
     
     except nx.NetworkXNoPath:
         print("No reachable path exists between these points.")
@@ -228,6 +221,9 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
 # === OBJECTS ===
 def get_object_type(object) -> str:
     return object['objectType']
+
+def is_object_type(object : dict, object_type : str):
+    return get_object_type(object).lower() == object_type.lower()
 
 def get_object_id(object : dict) -> str:
     return object['objectId']
@@ -241,7 +237,7 @@ def find_object(controller: Controller, object_name: str) -> dict[str, str]:
     objs = get_objects_in_scene(controller)
 
     for obj in objs:
-        if get_object_type(obj).lower() == object_name.lower():
+        if is_object_type(obj, object_name):
             return obj
 
     return None
@@ -297,26 +293,39 @@ def get_visible_objects_around(controller: Controller):
 
 # === TASK EXECUTION ===
 
-def execute_plan(controller: Controller, plan: list[str]):
+def execute_plan(controller: Controller, plan: list[str]) -> int:
     """Execute the plan in the Ai2Thor environment
     
     Args:
         controller: the Ai2Thor controller
-        plan: list of instructione that the embodied has to execute"""
+        plan: list of instructione that the embodied has to execute
+        
+    Returns:
+        -1: if the action given was in bad format
+        -2: if the subject given was not found in the environment"""
     
     for step in plan:
 
-        action, target = task.cmd_translation( step )
+        print(f"-> {step}")
 
-        if target:
-            obj = find_object(controller, target)
+        action = task.get_action_from_cmd( step )
 
-            if not obj:
-                print(f"Error: Object '{target}' not found in the environment\n\n")
-                input()
-                return
+        if not task.is_action(action):
+            return -1
 
-        print(f" -> {step} ")
+        target = task.get_subjects_from_cmd( step )
+
+        match action:
+            case task.DROP | task.THROW | task.MOVEHELDBACK | task.MOVEHELDLEFT | task.MOVEHELDRIGHT | task.MOVEHELDUP | task.MOVEHELDDOWN:
+                if target:
+                    return -1 
+            case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN:
+                obj = find_object(controller, target)
+
+                if not obj:
+                    return -2
+            case task.FILLLIQUID | task.EMPTYLIQUID:
+                pass
 
         match action:
             case task.FIND:
@@ -397,25 +406,50 @@ def execute_plan(controller: Controller, plan: list[str]):
         time.sleep(SLEEP_BETWEEN_STEPS)
 
 def reach_object(controller : Controller, obj : dict[str, str]):
-    closest_position = get_object_closest_position(controller, obj)
 
-    if not closest_position:
-        return
+    max_attempts = 20
 
-    closest_position, rotation_angle, horizon_angle = closest_position
+    nth = 1
 
-    path = get_path_to_position(controller, closest_position)
+    for i in range(max_attempts):
 
-    for p in path:
-        controller.step(
-            action = "TeleportFull",
-            position = p,
-            rotation = rotation_angle,
-            horizon = horizon_angle,
-            standing = True
-        )
+        closest_position, rotation_angle, horizon_angle = get_object_closest_position(controller, obj, nth)
 
-        controller.step(action = "Done")
+        print(f"{obj['name']} - closest Position: {closest_position}")
+
+        if (not closest_position):
+            return
+
+        path = get_path_to_position(controller, closest_position)
+
+        print(f"Agent position: {get_agent_position(controller)}\nPath:")
+
+        for p in path:
+            print(f"{p}")
+
+        input()
+
+        for p in path:
+            controller.step(
+                action = "TeleportFull",
+                position = p,
+                rotation = {'x': 0, 'y': rotation_angle, 'z': 0},
+                horizon = horizon_angle,
+                standing = True
+            )
+
+            if not controller.last_event.metadata['lastActionSuccess']:
+                print(f"\n\nError in teleporting: {controller.last_event.metadata['errorMessage']}\n")
+
+                if i == 10 :
+                    nth -= 10
+                else:
+                    nth += 1
+                break
+            else:
+                controller.step(action = "Done")
+        else:
+            break
 
 def pick_up_object(controller: Controller, object : dict):
     controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
