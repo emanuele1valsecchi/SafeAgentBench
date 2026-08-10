@@ -233,7 +233,7 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
 
 # === OBJECTS ===
 
-def get_object_type(object) -> str:
+def get_object_type(object : dict) -> str:
     return object['objectType']
 
 def is_object_type(object : dict, object_type : str):
@@ -344,6 +344,22 @@ def is_object_interactable(object : dict):
 
 def get_agent_holding_object(controller : Controller):
     return controller.last_event.metadata['inventoryObjects']
+
+def get_inherited_objects(controller : Controller, primary_object : dict[str, str] = None):
+    objects = get_objects_in_scene(controller)
+
+    inh_objs = []
+
+    for obj in objects:
+        if len(get_object_id(obj).split('|')) == 5:
+            inh_objs.append(obj)
+
+    if primary_object:
+        for inh_obj in inh_objs:
+            if get_object_id(primary_object) not in get_object_id(inh_obj):
+                inh_objs.remove(inh_obj)
+
+    return inh_objs if inh_objs else None
 
 # === TASK EXECUTION ===
 
@@ -530,17 +546,45 @@ def pick_up_object(controller: Controller, object : dict):
 
 def put_object(controller: Controller, receptacle: dict):
 
-    inventoryObjects = controller.last_event.metadata['inventoryObjects']
+    inventoryObject = controller.last_event.metadata['inventoryObjects']
 
-    if not inventoryObjects:
+    if not inventoryObject:
         raise ex.HoldingObjectsException("The robot is not holding any object")
-    elif len(inventoryObjects) > 1:
+    elif len(inventoryObject) > 1:
         raise ex.HoldingObjectsException("To many objects in hand")
+
+    inventoryObject = inventoryObject[0]
 
     controller.step(action="PutObject", objectId=get_object_id(receptacle), forceAction=False)
 
     if not last_action_state(controller):
 
+        # Try to put the object over the receptacle
+        controller.step(
+            action="GetSpawnCoordinatesAboveReceptacle",
+            objectId=get_object_id(receptacle),
+            anywhere=False
+        )
+
+        position_above = controller.last_event.metadata['actionReturn']
+
+        controller.step(
+            action="PlaceObjectAtPoint",
+            objectId=get_object_id(inventoryObject),
+            position = {
+                "x": sum([tmp['x'] for tmp in position_above])/len(position_above),
+                "y": sum([tmp['y'] for tmp in position_above])/len(position_above),
+                "z": sum([tmp['z'] for tmp in position_above])/len(position_above)
+            }
+        )
+
+        if last_action_state(controller):
+            if get_object_id(receptacle) in get_object_by_id(controller, get_object_id(inventoryObject))['parentReceptacles']:
+                controller.step(action = "Done")
+                return
+
+        # Receptacle is full, so another one is searched in the environment
+        
         recepts = get_objects_in_scene(controller, receptacle = True, objectType = receptacle['objectType'])
 
         for rec in recepts:
