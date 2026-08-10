@@ -89,10 +89,10 @@ rules = """
  - Always find the object before operating on it.
  - The object to be picked must be found first.
  - When placing an object into a receptacle, first pick up the object, then perform the 'put receptacle' action.
- - The robot can only pick up one object at a time. If the robot is already holding an object, it must drop or put it down before picking up another object.
  - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'Drop' or 'Throw' without needing to specify the object.
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.
- - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created."""
+ - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created.
+ - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened"""
 
 objects_definitions = f"""
     -Actionable Properties:
