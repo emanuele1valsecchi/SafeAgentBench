@@ -13,6 +13,7 @@ import custom_exceptions as ex
 SLEEP_BETWEEN_STEPS = 0.0001
 CAMERA_HEIGHT_OFFSET = 0.675
 TARGET_MAX_DISTANCE = 1.0
+MAX_ATTEMPTS = 20 # NUmber of times an action is repeated before throwing an exception and closing the program
 
 # === CREATION ===
 def create_controller(agentMode = "default", visibilityDistance = 1.5, scene = "FloorPlan1", 
@@ -231,6 +232,27 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
     except nx.NetworkXNoPath:
         return []
 
+def teleport_to_free_position(controller : Controller):
+    """Try to teleport the agent in a free position, without animation.
+    This action should be used only if the agent is stucked in a position and should free itself
+    
+    Raises:
+        Ai2THORException: if the teleport cannot be done in MAX_ATTEMPTS times"""
+
+    for j in range(1, MAX_ATTEMPTS):
+        free_position = get_closest_reachable_position(get_agent_reachable_positions(controller), get_agent_position(controller), j)
+                    
+        controller.step(
+            action = "Teleport",
+            position = free_position,
+            standing = True
+        )
+
+        if last_action_state(controller):
+            return
+        
+    raise ex.Ai2THORException(controller)
+
 # === OBJECTS ===
 
 def get_object_type(object : dict) -> str:
@@ -342,9 +364,6 @@ def get_object_parent_receptacles(object : dict):
 def is_object_interactable(object : dict):
     return object['visible'] and object['isInteractable']
 
-def get_agent_holding_object(controller : Controller):
-    return controller.last_event.metadata['inventoryObjects']
-
 def get_inherited_objects(controller : Controller, primary_object : dict[str, str] = None):
     objects = get_objects_in_scene(controller)
 
@@ -361,6 +380,22 @@ def get_inherited_objects(controller : Controller, primary_object : dict[str, st
 
     return inh_objs if inh_objs else None
 
+def get_agent_inventory(controller : Controller):
+    return controller.last_event.metadata['inventoryObjects']
+
+def get_agent_holded_object(controller : Controller):
+    """
+    Returns:
+        inventory_object: if the agent is holding an object otherwise an exception is raised"""
+    inventory_objects = get_agent_inventory(controller)
+
+    if not inventory_objects:
+        raise ex.HoldingObjectsException("The robot is not holding any object")
+    elif len(inventory_objects) > 1:
+        raise ex.HoldingObjectsException("To many objects in hand")
+
+    return inventory_objects[0]
+    
 # === TASK EXECUTION ===
 
 def execute_plan(controller: Controller, plan: list[str]) -> int:
@@ -477,11 +512,9 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
 
 def reach_object(controller : Controller, obj : dict[str, str]):
 
-    max_attempts = 20
-
     nth = 1
 
-    for i in range(max_attempts):
+    for i in range(MAX_ATTEMPTS):
 
         closest_position, rotation_angle, horizon_angle = get_object_closest_position(controller, obj, nth)
 
@@ -501,17 +534,7 @@ def reach_object(controller : Controller, obj : dict[str, str]):
 
             if not last_action_state(controller):
                 if ( ex.Ai2THORException(controller).is_collision() ):
-                    for j in range(1, max_attempts):
-                        free_position = get_closest_reachable_position(get_agent_reachable_positions(controller), get_agent_position(controller), j)
-                    
-                        controller.step(
-                            action = "Teleport",
-                            position = free_position,
-                            standing = True
-                        )
-
-                        if last_action_state(controller):
-                            break
+                    teleport_to_free_position(controller)
                 
                 if i == 10 :
                     nth -= 10
@@ -530,7 +553,7 @@ def pick_up_object(controller: Controller, object : dict):
         raise ex.InteractionException("The object is not close to the agent")
     elif get_object_parent_receptacles(object) and ( not is_object_interactable(object) ):
         raise ex.InteractionException(f"Cannot interact with the object because it is contained in {get_object_parent_receptacles}")
-    elif get_agent_holding_object(controller):
+    elif get_agent_inventory(controller):
         raise ex.HoldingObjectsException("Agent can only pick up one object at a time")
 
     controller.step(
@@ -546,14 +569,7 @@ def pick_up_object(controller: Controller, object : dict):
 
 def put_object(controller: Controller, receptacle: dict):
 
-    inventoryObject = controller.last_event.metadata['inventoryObjects']
-
-    if not inventoryObject:
-        raise ex.HoldingObjectsException("The robot is not holding any object")
-    elif len(inventoryObject) > 1:
-        raise ex.HoldingObjectsException("To many objects in hand")
-
-    inventoryObject = inventoryObject[0]
+    inventory_object = get_agent_holded_object(controller)
 
     controller.step(action="PutObject", objectId=get_object_id(receptacle), forceAction=False)
 
@@ -570,7 +586,7 @@ def put_object(controller: Controller, receptacle: dict):
 
         controller.step(
             action="PlaceObjectAtPoint",
-            objectId=get_object_id(inventoryObject),
+            objectId=get_object_id(inventory_object),
             position = {
                 "x": sum([tmp['x'] for tmp in position_above])/len(position_above),
                 "y": sum([tmp['y'] for tmp in position_above])/len(position_above),
@@ -579,7 +595,7 @@ def put_object(controller: Controller, receptacle: dict):
         )
 
         if last_action_state(controller):
-            if get_object_id(receptacle) in get_object_by_id(controller, get_object_id(inventoryObject))['parentReceptacles']:
+            if get_object_id(receptacle) in get_object_by_id(controller, get_object_id(inventory_object))['parentReceptacles']:
                 controller.step(action = "Done")
                 return
 
@@ -599,16 +615,52 @@ def put_object(controller: Controller, receptacle: dict):
                     controller.step(action = "Done")
                     break
         else:
-            print_metadata(controller)
             raise ex.ReceptacleException(f"No {get_object_type(receptacle)} can hold the object in hand")
     else:
         controller.step(action = "Done")
 
 def drop_object(controller: Controller):
-    controller.step(action="DropHandObject", forceAction=True)
 
-def throw_object():
-    pass
+    get_agent_holded_object(controller)
+
+    controller.step(action="DropHandObject", forceAction=False)
+
+    if not last_action_state(controller): # If the agent cannot drop the object try to teleport it to a different position
+        for i in range(MAX_ATTEMPTS):
+            teleport_to_free_position(controller)
+            controller.step(action="DropHandObject", forceAction=False)
+
+            if last_action_state(controller):
+                break
+        else:
+            raise ex.Ai2THORException(controller)
+
+    controller.step(action = "Done")
+
+def throw_object(controller : Controller):
+    get_agent_holded_object(controller)
+    
+    controller.step(
+        action="ThrowObject",
+        moveMagnitude=1500.0,
+        forceAction=False
+    )
+
+    if not last_action_state(controller): # If the agent cannot drop the object try to teleport it to a different position
+        for i in range(MAX_ATTEMPTS):
+            teleport_to_free_position(controller)
+            controller.step(
+                action="ThrowObject",
+                moveMagnitude=1500.0,
+                forceAction=True
+            )
+
+            if last_action_state(controller):
+                break
+        else:
+            raise ex.Ai2THORException(controller)
+
+    controller.step(action = "Done")
 
 def move_held_object_back():
     pass
@@ -635,7 +687,42 @@ def direction_pull_object():
     pass
 
 def open_object(controller: Controller, object: dict):
-    controller.step(action="OpenObject", objectId=get_object_id(object), forceAction=True)
+    steps_num = 4
+
+    openness = 1.0 / steps_num
+
+    if object['openable'] and object['openness'] < 1.0:
+    
+        for i in range(steps_num):
+            controller.step(
+                action="OpenObject",
+                objectId=get_object_id(object),
+                openness = openness,
+                forceAction=False
+            )
+    
+            if not last_action_state(controller):    
+                for j in range(MAX_ATTEMPTS):
+                    teleport_to_free_position(controller)
+    
+                    controller.step(
+                        action="OpenObject",
+                        objectId=get_object_id(object),
+                        openness = 1.0,
+                        forceAction=False
+                    )
+    
+                    if last_action_state(controller):
+                        break
+                else:
+                    raise ex.Ai2THORException(controller)
+            
+            openness += openness
+            controller.step(action="MoveBack")
+            controller.step(action = "Done")
+
+    elif not object['openable']:
+        raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
 
 def close_object(controller: Controller, object: dict):
     controller.step(action="CloseObject", objectId=get_object_id(object), forceAction=True)

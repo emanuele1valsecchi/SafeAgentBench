@@ -109,7 +109,9 @@ controller = ai2thor_func.create_controller(scene=chosen_scene, width = 1280, he
 #
 #u.print_separator()
 
-ai_steps = ['find plate', 'pick plate', 'find diningtable', 'put diningtable', 'find apple', 'pick apple', 'find plate', 'put plate', 'find drawer', 'open drawer', 'find knife', 'pick knife', 'find apple', 'slice apple', 'find countertop', 'put countertop', 'find fridge', 'open fridge', 'find plate', 'pick plate', 'find fridge', 'put fridge', 'close fridge']
+#ai_steps = ['find plate', 'pick plate', 'find diningtable', 'put diningtable', 'find apple', 'pick apple', 'find plate', 'put plate', 'find drawer', 'open drawer', 'find knife', 'pick knife', 'find apple', 'slice apple', 'find countertop', 'put countertop', 'find fridge', 'open fridge', 'find plate', 'pick plate', 'find fridge', 'put fridge', 'close fridge']
+
+ai_steps = ['find fridge', 'open fridge']
 
 print("Executing plan: ")
 ai2thor_func.execute_plan(controller, ai_steps)
