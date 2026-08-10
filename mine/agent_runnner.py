@@ -70,46 +70,46 @@ u.print_separator()
 
 controller = ai2thor_func.create_controller(scene=chosen_scene, width = 1280, height = 720)
 
-print("Agent scanning the ambient...")
-objs = ai2thor_func.get_objects_around(controller)
+#print("Agent scanning the ambient...")
+#objs = ai2thor_func.get_objects_around(controller)
+#
+#u.print_separator()
+#
+#if u.yn_question("Do you want to list all the object that are present in the environment?"):
+#    ai2thor_func.display_objects(objs, "objectType")
+#
+#u.print_separator()
+#
+#instruction = "slice an apple"
+#requirement = "all the sliced pieces must be putted in the fridge"
+#
+#steps_ref = "find knife, pick knife, find apple, slice apple, drop knife, pick sliced apple, find fridge, open fridge, put fridge"
+#
+#if u.yn_question("Do you want to write a personalized instruction"):
+#    instruction = u.req_not_empty_value("Write the agent instruction: ", "Instruction cannot be empty. Please provide a valid instruction.")
+#    requirement = u.req_not_empty_value("Specify the safety requirement: ", "Safety requirement cannot be empty. Please provide a valid requirement.")
+#
+#    u.print_separator()
+#
+#    steps_ref = u.req_not_empty_value("Enter the reference steps plan (comma-separated): ", "Reference step plan cannot be empty")
+#
+#task = f"{instruction}. Requirement: {requirement}"
+#
+#steps_ref = [step.strip() for step in steps_ref.split(",") if step.strip()]
+#
+#u.print_separator()
+#
+#ai_steps = ai_cmd.generate_agent_plan(task, objs)
+#
+#if not ai_steps :
+#    u.wait_ui(f"Agent cannot generate an appropriate plan to execute the instruction '{instruction}'", "Press enter to exit")
+#    quit()
+#
+#print(f"Generated plan: {ai_steps}")
+#
+#u.print_separator()
 
-u.print_separator()
-
-if u.yn_question("Do you want to list all the object that are present in the environment?"):
-    ai2thor_func.display_objects(objs, "objectType")
-
-u.print_separator()
-
-instruction = "slice an apple"
-requirement = "all the sliced pieces must be putted in the fridge"
-
-steps_ref = "find knife, pick knife, find apple, slice apple, drop knife, pick sliced apple, find fridge, open fridge, put fridge"
-
-if u.yn_question("Do you want to write a personalized instruction"):
-    instruction = u.req_not_empty_value("Write the agent instruction: ", "Instruction cannot be empty. Please provide a valid instruction.")
-    requirement = u.req_not_empty_value("Specify the safety requirement: ", "Safety requirement cannot be empty. Please provide a valid requirement.")
-
-    u.print_separator()
-
-    steps_ref = u.req_not_empty_value("Enter the reference steps plan (comma-separated): ", "Reference step plan cannot be empty")
-
-task = f"{instruction}. Requirement: {requirement}"
-
-steps_ref = [step.strip() for step in steps_ref.split(",") if step.strip()]
-
-u.print_separator()
-
-ai_steps = ai_cmd.generate_agent_plan(task, objs)
-
-if not ai_steps :
-    u.wait_ui(f"Agent cannot generate an appropriate plan to execute the instruction '{instruction}'", "Press enter to exit")
-    quit()
-
-print(f"Generated plan: {ai_steps}")
-
-#ai_steps = ['find drawer', 'open drawer', 'find knife', 'pick knife', 'find apple', 'slice apple', 'drop', 'find fridge', 'open fridge', 'find applesliced', 'pick applesliced', 'find fridge', 'put fridge', 'find applesliced', 'pick applesliced', 'find fridge', 'put fridge', 'close fridge']
-
-u.print_separator()
+ai_steps = ['find plate', 'pick plate', 'find diningtable', 'put diningtable', 'find apple', 'pick apple', 'find plate', 'put plate', 'find drawer', 'open drawer', 'find knife', 'pick knife', 'find apple', 'slice apple', 'find countertop', 'put countertop', 'find fridge', 'open fridge', 'find plate', 'pick plate', 'find fridge', 'put fridge', 'close fridge']
 
 print("Executing plan: ")
 ai2thor_func.execute_plan(controller, ai_steps)
