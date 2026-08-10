@@ -7,7 +7,7 @@ import numpy as np
 from scipy import spatial
 import math
 import networkx as nx
-import re
+import custom_exceptions as ex
 
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
@@ -36,6 +36,22 @@ def create_controller(agentMode = "default", visibilityDistance = 1.5, scene = "
         height=height,
         fieldOfView=fieldOfView
     )
+
+# === UTILS ===
+
+def last_action_state(controller : Controller):
+    return controller.last_event.metadata['lastActionSuccess']
+
+def print_metadata(controller : Controller):
+    for k, v in controller.last_event.metadata.items():
+        print(f"\n{k} : {v}\n")
+
+def print_object_info(object : dict[str, str], *args : str):
+    for k, v in object.items():
+        if not args:
+            print(f"{k} : {v}")
+        elif k in args:
+            print(f"{k} : {v}")
 
 # === POSITION ===
 def get_agent_position(controller : Controller) -> dict:
@@ -121,9 +137,6 @@ def get_closest_reachable_position(agent_reachable_positions : list[dict], targe
     kdtree_reachable_positions = get_kdtree_reachable_positions(agent_reachable_positions)
     _, i = kdtree_reachable_positions.query([target_position['x'], target_position['y'], target_position['z']], k = nth + 1)
     return agent_reachable_positions[(i[nth - 1])]
-
-def is_object_close(target : dict[str, str], target_max_dist = TARGET_MAX_DISTANCE) -> bool:
-    return target['visible'] and target['distance'] < target_max_dist
 
 def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=TARGET_MAX_DISTANCE, nth = 1) -> tuple[dict, float, float] | None:
     """
@@ -218,26 +231,6 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
     except nx.NetworkXNoPath:
         return []
 
-def get_exception_from_metadata( controller : Controller ) -> dict:
-    # ^(?P<exception>[^:]+)       -> Captures from the start until the first colon
-    # :\s*(?P<message>.*?)        -> Captures the main message lazily
-    # (?:\.\.?\s*trace:|\s*trace:) -> Handles the "trace:" delimiter (and the double dots AI2-THOR sometimes outputs)
-    # \s*(?P<trace>.*)            -> Captures the rest of the multiline string as the stack trace
-    pattern = re.compile(
-        r"^(?P<exception>[^:]+):\s*(?P<message>.*?)(?:\.\.?\s*trace:|\s*trace:)\s*(?P<trace>.*)", 
-        re.DOTALL | re.IGNORECASE
-    )
-    
-    match = pattern.search(controller.last_event.metadata['errorMessage'])
-    
-    if match:
-        return {
-            "Exception": match.group("exception").strip(),
-            "Message": match.group("message").strip(),
-            "Trace": match.group("trace").strip()
-        }
-    return None
-
 # === OBJECTS ===
 
 def get_object_type(object) -> str:
@@ -246,19 +239,34 @@ def get_object_type(object) -> str:
 def is_object_type(object : dict, object_type : str):
     return get_object_type(object).lower() == object_type.lower()
 
+def is_object_close(target : dict[str, str], target_max_dist = TARGET_MAX_DISTANCE) -> bool:
+    return target['visible'] and target['distance'] < target_max_dist
+
 def get_object_id(object : dict) -> str:
     return object['objectId']
 
-def find_object(controller: Controller, object_name: str) -> dict[str, str]:
+def get_object_by_type(controller: Controller, object_type: str) -> dict[str, str]:
     """Return the object with object_name reference in the scene if found, otherwise None"""
 
-    if not object_name:
-        return None
+    if not object_type:
+        raise ex.ObjectException(f"The object type given is not valid")
     
     objs = get_objects_in_scene(controller)
 
     for obj in objs:
-        if is_object_type(obj, object_name):
+        if is_object_type(obj, object_type):
+            return obj
+
+    return None
+
+def get_object_by_id(controller : Controller, object_id : str) -> dict[str, str]:
+    if not object_id:
+        raise ex.ObjectException(f"The object id given is not valid")
+
+    objs = get_objects_in_scene(controller)
+
+    for obj in objs:
+        if get_object_id(obj) == object_id:
             return obj
 
     return None
@@ -328,6 +336,14 @@ def get_objects_around(controller: Controller, **kwargs):
 
     return objs
 
+def get_object_parent_receptacles(object : dict):
+    return object['parentReceptacles']
+
+def is_object_interactable(object : dict):
+    return object['visible'] and object['isInteractable']
+
+def get_agent_holding_object(controller : Controller):
+    return controller.last_event.metadata['inventoryObjects']
 
 # === TASK EXECUTION ===
 
@@ -337,10 +353,7 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
     Args:
         controller: the Ai2Thor controller
         plan: list of instructione that the embodied has to execute
-        
-    Returns:
-        -1: if the action given was in bad format
-        -2: if the subject given was not found in the environment"""
+    """
     
     for step in plan:
 
@@ -349,19 +362,22 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
         action = task.get_action_from_cmd( step )
 
         if not task.is_action(action):
-            return -1
+            raise ex.BadActionFormat("Action not recognized by the agent")
 
         target = task.get_subjects_from_cmd( step )
 
         match action:
             case task.DROP | task.THROW | task.MOVEHELDBACK | task.MOVEHELDLEFT | task.MOVEHELDRIGHT | task.MOVEHELDUP | task.MOVEHELDDOWN:
                 if target:
-                    return -1 
+                    raise ex.BadActionFormat(f"Action '{action}' should not contain a target")
             case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN:
-                obj = find_object(controller, target)
+                if not target:
+                    raise ex.BadActionFormat(f"Action '{action}' should contain a target")
+
+                obj = get_object_by_type(controller, target)
 
                 if not obj:
-                    return -2
+                    raise ex.BadActionFormat(f"{action.capitalize()} target not found")
             case task.FILLLIQUID | task.EMPTYLIQUID:
                 pass
 
@@ -467,12 +483,9 @@ def reach_object(controller : Controller, obj : dict[str, str]):
                 standing = True
             )
 
-            if not controller.last_event.metadata['lastActionSuccess']:
-
-                exception = get_exception_from_metadata(controller)
-                if (exception['Exception'] == 'InvalidOperationException' and exception['Message'].lower().startswith("collided")):
-
-                    for j in range(1,max_attempts):
+            if not last_action_state(controller):
+                if ( ex.Ai2THORException(controller).is_collision() ):
+                    for j in range(1, max_attempts):
                         free_position = get_closest_reachable_position(get_agent_reachable_positions(controller), get_agent_position(controller), j)
                     
                         controller.step(
@@ -481,7 +494,7 @@ def reach_object(controller : Controller, obj : dict[str, str]):
                             standing = True
                         )
 
-                        if controller.last_event.metadata['lastActionSuccess']:
+                        if last_action_state(controller):
                             break
                 
                 if i == 10 :
@@ -497,11 +510,55 @@ def reach_object(controller : Controller, obj : dict[str, str]):
 
 def pick_up_object(controller: Controller, object : dict):
 
+    if not is_object_close(object):
+        raise ex.InteractionException("The object is not close to the agent")
+    elif get_object_parent_receptacles(object) and ( not is_object_interactable(object) ):
+        raise ex.InteractionException(f"Cannot interact with the object because it is contained in {get_object_parent_receptacles}")
+    elif get_agent_holding_object(controller):
+        raise ex.HoldingObjectsException("Agent can only pick up one object at a time")
 
-    controller.step(action="PickupObject", objectId=get_object_id(object), forceAction=True)
+    controller.step(
+        action="PickupObject",
+        objectId=get_object_id(object),
+        forceAction=False
+    )
 
-def put_object(controller: Controller, object: dict):
-    controller.step(action="PutObject", objectId=get_object_id(object), forceAction=True)
+    if not last_action_state(controller) : 
+        raise ex.Ai2THORException(controller)
+    else :
+        controller.step( action = "Done")
+
+def put_object(controller: Controller, receptacle: dict):
+
+    inventoryObjects = controller.last_event.metadata['inventoryObjects']
+
+    if not inventoryObjects:
+        raise ex.HoldingObjectsException("The robot is not holding any object")
+    elif len(inventoryObjects) > 1:
+        raise ex.HoldingObjectsException("To many objects in hand")
+
+    controller.step(action="PutObject", objectId=get_object_id(receptacle), forceAction=False)
+
+    if not last_action_state(controller):
+
+        recepts = get_objects_in_scene(controller, receptacle = True, objectType = receptacle['objectType'])
+
+        for rec in recepts:
+            if get_object_id(rec) != get_object_id(receptacle):
+                reach_object(controller, rec)
+
+                controller.step(action="PutObject", objectId=get_object_id(rec), forceAction=False)
+
+                if not last_action_state(controller):
+                    continue
+                else:
+                    controller.step(action = "Done")
+                    break
+        else:
+            print_metadata(controller)
+            raise ex.ReceptacleException(f"No {get_object_type(receptacle)} can hold the object in hand")
+    else:
+        controller.step(action = "Done")
 
 def drop_object(controller: Controller):
     controller.step(action="DropHandObject", forceAction=True)
