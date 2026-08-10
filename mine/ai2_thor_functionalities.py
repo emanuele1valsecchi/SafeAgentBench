@@ -725,6 +725,32 @@ def open_object(controller: Controller, object: dict):
         raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
 
 def close_object(controller: Controller, object: dict):
+    if object['openable'] and object['openness'] > 0.0:
+        controller.step(
+            action="CloseObject",
+            objectId=get_object_id(object),
+            forceAction=False
+        )
+
+        if not last_action_state(controller):    
+            for j in range(MAX_ATTEMPTS):
+                teleport_to_free_position(controller)
+
+                controller.step(
+                    action="CloseObject",
+                    objectId=get_object_id(object),
+                    forceAction=False
+                )
+
+                if last_action_state(controller):
+                    break
+            else:
+                raise ex.Ai2THORException(controller)
+
+            controller.step(action = "Done")
+    elif not object['openable']:
+        raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be closed")
+    
     controller.step(action="CloseObject", objectId=get_object_id(object), forceAction=True)
 
 def break_object():
@@ -734,7 +760,7 @@ def cook_object():
     pass
 
 def slice_object(controller: Controller, object: dict):
-    controller.step(action="SliceObject", objectId=get_object_id(object), forceAction=True)
+    controller.step(action="SliceObject", objectId=get_object_id(object), forceAction=False)
 
 def toggle_object_on():
     pass
