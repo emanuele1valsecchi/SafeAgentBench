@@ -429,8 +429,6 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
                 
                 obj = get_object_by_type(controller, target)
 
-                print_object_info(obj)
-
                 if not obj:
                     raise ex.BadActionFormat(f"{action.capitalize()} target not found")
             case task.FILLLIQUID | task.EMPTYLIQUID:
