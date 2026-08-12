@@ -92,7 +92,8 @@ rules = """
  - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'Drop' or 'Throw' without needing to specify the object.
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.
  - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created.
- - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened"""
+ - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened7
+ - In order to slice an object another object that can slice should be picked up first and holded in hand while performing the slice"""
 
 objects_definitions = f"""
     -Actionable Properties:
