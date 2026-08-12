@@ -1,6 +1,8 @@
 agent_action = ("find", "pick", "put", "drop", "throw", "moveheldback", "moveheldleft", "moveheldright", "moveheldup", "movehelddown", "pour", "push", "pull", "open", "close", "break", "cook", "slice", "turnon", "turnoff", "dirty", "clean", "fillliquid", "emptyliquid")
 
-# Constants for agent actions (use these in pattern matching and comparisons)
+liquid_available = ("coffee", "wine", "water")
+
+# Constants for agent actions
 FIND = agent_action[0]
 PICK = agent_action[1]
 PUT = agent_action[2]
@@ -29,21 +31,14 @@ EMPTYLIQUID = agent_action[23]
 def get_action_from_cmd( command : str ) -> str:
     return command.strip().split(" ", 1)[0].lower().strip()
 
-def get_subjects_from_cmd( command : str, multiple_subjects = False) -> str | tuple[str]:
-    subject = command.strip().split(" ")[1:]
+def get_subjects_from_cmd( command : str ) -> tuple[str]:
+    return [subject.lower() for subject in command.split()[1:]]
 
-    ret = ""
+def get_available_liquids():
+    return liquid_available
 
-    if not multiple_subjects:
-        if len(subject) == 1:
-            return subject[0].strip()
-
-        for s in subject:
-            ret += s
-
-        return ret
-
-    return subject
-        
 def is_action( action : str ) -> bool:
     return action in agent_action
+
+def is_liquid( liquid : str ) -> bool:
+    return liquid in liquid_available
