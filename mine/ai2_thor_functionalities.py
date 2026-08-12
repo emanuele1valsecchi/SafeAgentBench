@@ -422,15 +422,33 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
                 if target:
                     raise ex.BadActionFormat(f"Action '{action}' should not contain a target")
             case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN:
-                if not target:
-                    raise ex.BadActionFormat(f"Action '{action}' should contain a target")
-
+                if ((not target) or (len(target) > 1)):
+                    raise ex.BadActionFormat(f"Action '{action}' should contain a single target")
+                else:
+                    target = target[0]
+                
                 obj = get_object_by_type(controller, target)
+
+                print_object_info(obj)
 
                 if not obj:
                     raise ex.BadActionFormat(f"{action.capitalize()} target not found")
             case task.FILLLIQUID | task.EMPTYLIQUID:
-                pass
+                if (not target) or (len(target) != 2):
+                    raise ex.BadActionFormat(f"Action '{action}' should contain two targets")
+
+                obj = get_object_by_type(controller, target[0])
+
+                liquid = target[1]
+
+                if not obj:
+                    raise ex.BadActionFormat(f"{action.capitalize()} target not found")
+
+                if not liquid:
+                    raise ex.BadActionFormat(f"To perform '{action}' a valid liquid must be specified")
+                elif not task.is_liquid(liquid):
+                    raise ex.BadActionFormat(f"The liquid '{liquid}' is not allowed, only available liquid are {task.get_available_liquids()}")
+                
 
         match action:
             case task.FIND:
@@ -446,31 +464,31 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
                 drop_object(controller)
 
             case task.THROW:
-                throw_object()
+                throw_object(controller)
 
             case task.MOVEHELDBACK:
-                move_held_object_back()
+                move_held_object_back(controller)
 
             case task.MOVEHELDLEFT:
-                move_held_object_left()
+                move_held_object_left(controller)
 
             case task.MOVEHELDRIGHT:
-                move_held_object_right()
+                move_held_object_right(controller)
 
             case task.MOVEHELDUP:
-                move_held_object_up()
+                move_held_object_up(controller)
 
             case task.MOVEHELDDOWN:
-                move_held_object_down()
+                move_held_object_down(controller)
 
             case task.POUR:
-                rotate_held_object()
+                rotate_held_object(controller)
 
             case task.PUSH:
-                directional_push_object()
+                directional_push_object(controller, obj)
 
             case task.PULL:
-                direction_pull_object()
+                direction_pull_object(controller, obj)
 
             case task.OPEN:
                 open_object(controller, obj)
@@ -479,36 +497,52 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
                 close_object(controller, obj)
 
             case task.BREAK:
-                break_object()
+                break_object(controller, obj)
 
             case task.COOK:
-                cook_object()
+                cook_object(controller, obj)
 
             case task.SLICE:
                 slice_object(controller, obj)
 
             case task.TURNON:
-                toggle_object_on()
+                toggle_object_on(controller, obj)
 
             case task.TURNOFF:
-                toggle_object_off()
+                toggle_object_off(controller, obj)
 
             case task.DIRTY:
-                dirty_object()
+                dirty_object(controller, obj)
 
             case task.CLEAN:
-                clean_object()
+                clean_object(controller, obj)
 
             case task.FILLLIQUID:
-                fill_object_with_liquid()
+                fill_object_with_liquid(controller, obj, liquid)
 
             case task.EMPTYLIQUID:
-                empty_object_from_liquid()
+                empty_object_from_liquid(controller, obj)
 
             case _:
                 print(f"Action '{action}' not allowed")
         
         time.sleep(SLEEP_BETWEEN_STEPS)
+
+def resilient_execution(controller : Controller, **kwargs):
+    controller.step(**kwargs)
+
+    if not last_action_state(controller):
+        for i in range(MAX_ATTEMPTS):
+            teleport_to_free_position(controller)
+
+            controller.step(**kwargs)
+
+            if last_action_state(controller):
+                break
+        else:
+            raise ex.Ai2THORException(controller)
+    
+    controller.step(action = "Done")
 
 def reach_object(controller : Controller, obj : dict[str, str]):
 
@@ -556,22 +590,21 @@ def pick_up_object(controller: Controller, object : dict):
     elif get_agent_inventory(controller):
         raise ex.HoldingObjectsException("Agent can only pick up one object at a time")
 
-    controller.step(
-        action="PickupObject",
-        objectId=get_object_id(object),
-        forceAction=False
+    resilient_execution(controller,
+        action = "PickupObject",
+        objectId = get_object_id(object),
+        forceAction = False
     )
-
-    if not last_action_state(controller) : 
-        raise ex.Ai2THORException(controller)
-    else :
-        controller.step( action = "Done")
 
 def put_object(controller: Controller, receptacle: dict):
 
     inventory_object = get_agent_holded_object(controller)
 
-    controller.step(action="PutObject", objectId=get_object_id(receptacle), forceAction=False)
+    controller.step(
+        action="PutObject", 
+        objectId=get_object_id(receptacle),
+        forceAction=False
+    )
 
     if not last_action_state(controller):
 
@@ -607,7 +640,11 @@ def put_object(controller: Controller, receptacle: dict):
             if get_object_id(rec) != get_object_id(receptacle):
                 reach_object(controller, rec)
 
-                controller.step(action="PutObject", objectId=get_object_id(rec), forceAction=False)
+                controller.step(
+                    action="PutObject",
+                    objectId=get_object_id(rec),
+                    forceAction=False
+                )
 
                 if not last_action_state(controller):
                     continue
@@ -623,68 +660,101 @@ def drop_object(controller: Controller):
 
     get_agent_holded_object(controller)
 
-    controller.step(action="DropHandObject", forceAction=False)
-
-    if not last_action_state(controller): # If the agent cannot drop the object try to teleport it to a different position
-        for i in range(MAX_ATTEMPTS):
-            teleport_to_free_position(controller)
-            controller.step(action="DropHandObject", forceAction=False)
-
-            if last_action_state(controller):
-                break
-        else:
-            raise ex.Ai2THORException(controller)
-
-    controller.step(action = "Done")
+    resilient_execution(controller,
+        action = "DropHandObject",
+        forceAction = False
+    )
 
 def throw_object(controller : Controller):
     get_agent_holded_object(controller)
-    
-    controller.step(
+
+    resilient_execution(controller,
         action="ThrowObject",
         moveMagnitude=1500.0,
         forceAction=False
     )
 
-    if not last_action_state(controller): # If the agent cannot drop the object try to teleport it to a different position
-        for i in range(MAX_ATTEMPTS):
-            teleport_to_free_position(controller)
-            controller.step(
-                action="ThrowObject",
-                moveMagnitude=1500.0,
-                forceAction=True
-            )
+def move_held_object_back(controller : Controller):
+    get_agent_holded_object(controller)
 
-            if last_action_state(controller):
-                break
-        else:
-            raise ex.Ai2THORException(controller)
+    resilient_execution(controller,
+        action = "MoveHeldObjectBack",
+        moveMagnitude =0.1,
+        forceVisible=True
+    )
 
-    controller.step(action = "Done")
+def move_held_object_left(controller : Controller):
+    get_agent_holded_object(controller)
 
-def move_held_object_back():
-    pass
+    resilient_execution(controller,
+        action = "MoveHeldObjectLeft",
+        moveMagnitude =0.1,
+        forceVisible=True
+    )
 
-def move_held_object_left():
-    pass
+def move_held_object_right(controller : Controller):
+    get_agent_holded_object(controller)
 
-def move_held_object_right():
-    pass
+    resilient_execution(controller,
+        action = "MoveHeldObjectRight",
+        moveMagnitude =0.1,
+        forceVisible=True
+    )
 
-def move_held_object_up():
-    pass
+def move_held_object_up(controller : Controller):
+    get_agent_holded_object(controller)
 
-def move_held_object_down():
-    pass
+    resilient_execution(controller,
+        action = "MoveHeldObjectUp",
+        moveMagnitude =0.1,
+        forceVisible=True
+    )
 
-def rotate_held_object():
-    pass
+def move_held_object_down(controller : Controller):
+    get_agent_holded_object(controller)
 
-def directional_push_object():
-    pass
+    resilient_execution(controller,
+        action = "MoveHeldObjectDown",
+        moveMagnitude =0.1,
+        forceVisible=True
+    )
 
-def direction_pull_object():
-    pass
+def rotate_held_object(controller : Controller, pour = True):
+    holded_object = get_object_by_id(get_object_id(get_agent_holded_object(controller)))
+
+    if not holded_object:
+        raise ex.HoldingObjectsException(f"Cannot find the object in the scene")
+    elif pour and (not holded_object['isFilledWithLiquid']):
+        raise ex.InteractionException(f"The object '{holded_object}' is not filled with any liquid")
+
+    degree_step = 60.0
+
+    while degree_step < 360.0:
+        resilient_execution(controller,
+            action = "RotateHeldObject",
+            pitch = degree_step
+        )
+
+        degree_step += 30.0
+
+    if pour and get_object_by_id(get_object_id(get_agent_holded_object(controller)))['isFilledWithLiquid']:
+        raise ex.InteractionException("The liquid cannot be poured from the object")
+
+def directional_push_object(controller : Controller, object : dict[str, str]):
+    resilient_execution(controller,
+        action="DirectionalPush",
+        objectId=get_object_id(object),
+        moveMagnitude="100",
+        pushAngle="0"
+    )
+
+def direction_pull_object(controller : Controller, object : dict[str, str]):
+    resilient_execution(controller,
+        action="DirectionalPush",
+        objectId=get_object_id(object),
+        moveMagnitude="100",
+        pushAngle="180"
+    )
 
 def open_object(controller: Controller, object: dict):
     steps_num = 4
@@ -726,56 +796,121 @@ def open_object(controller: Controller, object: dict):
 
 def close_object(controller: Controller, object: dict):
     if object['openable'] and object['openness'] > 0.0:
-        controller.step(
+
+        resilient_execution(controller,
             action="CloseObject",
             objectId=get_object_id(object),
             forceAction=False
         )
 
-        if not last_action_state(controller):    
-            for j in range(MAX_ATTEMPTS):
-                teleport_to_free_position(controller)
-
-                controller.step(
-                    action="CloseObject",
-                    objectId=get_object_id(object),
-                    forceAction=False
-                )
-
-                if last_action_state(controller):
-                    break
-            else:
-                raise ex.Ai2THORException(controller)
-
-            controller.step(action = "Done")
     elif not object['openable']:
         raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be closed")
-    
-    controller.step(action="CloseObject", objectId=get_object_id(object), forceAction=True)
 
-def break_object():
-    pass
+def break_object(controller : Controller, object : dict):
+    if not object['breakable']:
+        raise ex.ObjectException("The selected object cannot be broken")
+    elif object['isBroken']:
+        raise ex.ObjectException("The selected object is already broken")
 
-def cook_object():
-    pass
+    resilient_execution(controller,
+        action="BreakObject",
+        objectId=get_object_id(object),
+        forceAction = False
+    )
+
+def cook_object(controller : Controller, object : dict[str, str]):
+
+    if not object['cookable']:
+        raise ex.InteractionException(f"{object['name'].capitalize()} cannot be cooked")
+    elif object['isCooked']:
+        raise ex.InteractionException(f"{object['name'].capitalize()} is already cooked")
+
+    resilient_execution(controller,
+        action="CookObject",
+        objectId=get_object_id(object),
+        forceAction = False
+    )
 
 def slice_object(controller: Controller, object: dict):
-    controller.step(action="SliceObject", objectId=get_object_id(object), forceAction=False)
 
-def toggle_object_on():
-    pass
+    get_agent_holded_object(controller)
 
-def toggle_object_off():
-    pass
+    if object['sliceable'] and (not object['isSliced']):
 
-def dirty_object():
-    pass
+        resilient_execution(controller,
+            action="SliceObject", 
+            objectId=get_object_id(object),
+            forceAction=False
+        )
 
-def clean_object():
-    pass
+def toggle_object_on(controller : Controller, object : dict[str, str]):
+    if not object['toggleable']:
+        raise ex.InteractionException(f"{get_object_type(object).capitalize()} cannot be toggled on")
+    elif object['isToggled']:
+        raise ex.InteractionException(f"{get_object_type(object).capitalize()} is already toggled on")
 
-def fill_object_with_liquid():
-    pass
+    resilient_execution(controller,
+        action = "ToggleObjectOn",
+        objectId=get_object_id(object),
+        forceAction = False
+    )
 
-def empty_object_from_liquid():
-    pass
+def toggle_object_off(controller : Controller):
+    if not object['toggleable']:
+        raise ex.InteractionException(f"{get_object_type(object).capitalize()} cannot be toggled off")
+    elif not object['isToggled']:
+        raise ex.InteractionException(f"{get_object_type(object).capitalize()} is already toggled off")
+
+    resilient_execution(controller,
+        action = "ToggleObjectOff",
+        objectId=get_object_id(object),
+        forceAction = False
+    )
+
+def dirty_object(controller : Controller, object : dict[str, str]):
+    if not object['dirtyable']:
+        raise ex.InteractionException(f"{object['name'].capitalize()} cannot be dirty")
+    elif object['isDirty']:
+        raise ex.InteractionException(f"{object['name'].capitalize()} is already dirty")
+
+    resilient_execution(controller,
+        action="DirtyObject",
+        objectId=get_object_id(object),
+        forceAction = False
+    )
+
+def clean_object(controller : Controller):
+    if not object['dirtyable']:
+        raise ex.InteractionException(f"{object['name'].capitalize()} cannot be cleaned since it cannot be dirty")
+    elif not object['isDirty']:
+        raise ex.InteractionException(f"{object['name'].capitalize()} is not dirty")
+
+    resilient_execution(controller,
+        action = "CleanObject",
+        objectId = get_object_id(object),
+        forceAction = False
+    )
+
+
+def fill_object_with_liquid(controller : Controller, object : dict[str, str], liquid : str):
+    if not object['canFillWithLiquid']:
+        raise ex.ObjectException("The object cannot be filled with any liquid")
+    elif object['isFilledWithLiquid'] and object['fillLiquid']:
+        raise ex.InteractionException(f"The object is already filled with '{object['fillLiquid']}'")
+
+    resilient_execution(controller,
+        action="FillObjectWithLiquid",
+        objectId=get_object_id(object),
+        fillLiquid=liquid,
+        forceAction = False
+    )
+
+def empty_object_from_liquid(controller : Controller, object : dict[str, str]):
+    if not object['isFilledWithLiquid']:
+        raise ex.InteractionException("The object is already empty")
+
+    resilient_execution(controller,
+        action="EmptyLiquidFromObject",
+        objectId=get_object_id(object),
+        forceAction = False
+    )
