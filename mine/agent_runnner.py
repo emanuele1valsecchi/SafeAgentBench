@@ -99,20 +99,25 @@ steps_ref = [step.strip() for step in steps_ref.split(",") if step.strip()]
 
 u.print_separator()
 
-ai_steps = ai_cmd.generate_agent_plan(task, objs)
+ai_manager = ai_cmd.aiManager(task, objs)
+
+ai_steps = ai_manager.generate_plan()
 
 if not ai_steps :
     u.wait_ui(f"Agent cannot generate an appropriate plan to execute the instruction '{instruction}'", "Press enter to exit")
     quit()
 
-print(f"Generated plan: {ai_steps}")
+print(f"Generated plan:")
+
+for i in range(len(ai_steps)):
+    print(f" {i + 1}) {ai_steps[i]}")
 
 u.print_separator()
 
 #ai_steps = ['find plate', 'pick plate', 'find diningtable', 'put diningtable', 'find apple', 'pick apple', 'find plate', 'put plate', 'find drawer', 'open drawer', 'find knife', 'pick knife', 'find apple', 'slice apple', 'find countertop', 'put countertop', 'find fridge', 'open fridge', 'find plate', 'pick plate', 'find fridge', 'put fridge', 'close fridge']
 
 print("Executing plan: ")
-ai2thor_func.execute_plan(controller, ai_steps)
+ai2thor_func.execute_plan(controller, ai_steps, ai_manager)
 
 u.print_separator()
 

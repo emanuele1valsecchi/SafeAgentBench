@@ -8,6 +8,7 @@ from scipy import spatial
 import math
 import networkx as nx
 import custom_exceptions as ex
+import ai_command as ai_cmd
 
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
@@ -249,6 +250,7 @@ def teleport_to_free_position(controller : Controller):
         )
 
         if last_action_state(controller):
+            controller.step( action = "Done")
             return
         
     raise ex.Ai2THORException(controller)
@@ -398,7 +400,7 @@ def get_agent_holded_object(controller : Controller):
     
 # === TASK EXECUTION ===
 
-def execute_plan(controller: Controller, plan: list[str]) -> int:
+def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager) -> int:
     """Execute the plan in the Ai2Thor environment
     
     Args:
@@ -408,46 +410,51 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
     
     for step in plan:
 
-        print(f"-> {step}")
-
         action = task.get_action_from_cmd( step )
 
         if not task.is_action(action):
             raise ex.BadActionFormat("Action not recognized by the agent")
 
-        target = task.get_subjects_from_cmd( step )
+        target_id = task.get_subjects_from_cmd( step )
 
         match action:
             case task.DROP | task.THROW | task.MOVEHELDBACK | task.MOVEHELDLEFT | task.MOVEHELDRIGHT | task.MOVEHELDUP | task.MOVEHELDDOWN:
-                if target:
+                if target_id:
                     raise ex.BadActionFormat(f"Action '{action}' should not contain a target")
-            case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN:
-                if ((not target) or (len(target) > 1)):
+
+                print(f"-> {action}")
+
+            case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN | task.EMPTYLIQUID:
+                if ((not target_id) or (len(target_id) > 1)):
                     raise ex.BadActionFormat(f"Action '{action}' should contain a single target")
                 else:
-                    target = target[0]
-                
-                obj = get_object_by_type(controller, target)
+                    target_id = target_id[0]
+                    
+                obj = get_object_by_id(controller, target_id)
 
                 if not obj:
-                    raise ex.BadActionFormat(f"{action.capitalize()} target not found")
-            case task.FILLLIQUID | task.EMPTYLIQUID:
-                if (not target) or (len(target) != 2):
+                    raise ex.BadActionFormat(f"The target of '{action.capitalize()}' was not found")
+
+                print(f"-> {action} {get_object_type(obj)}")
+
+            case task.FILLLIQUID:
+                if (not target_id) or (len(target_id) != 2):
                     raise ex.BadActionFormat(f"Action '{action}' should contain two targets")
 
-                obj = get_object_by_type(controller, target[0])
+                obj =  get_object_by_id(controller, target_id[0])
 
-                liquid = target[1]
+                liquid = target_id[1].lower()
 
                 if not obj:
-                    raise ex.BadActionFormat(f"{action.capitalize()} target not found")
+                    raise ex.BadActionFormat(f"The target of '{action.capitalize()}' was not found")
 
                 if not liquid:
                     raise ex.BadActionFormat(f"To perform '{action}' a valid liquid must be specified")
                 elif not task.is_liquid(liquid):
                     raise ex.BadActionFormat(f"The liquid '{liquid}' is not allowed, only available liquid are {task.get_available_liquids()}")
-                
 
+                print(f"-> {action} {get_object_type(obj)} {liquid}")
+                
         match action:
             case task.FIND:
                 reach_object(controller, obj)
@@ -523,6 +530,16 @@ def execute_plan(controller: Controller, plan: list[str]) -> int:
 
             case _:
                 print(f"Action '{action}' not allowed")
+
+        new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
+
+        if not (new_plan == plan):
+            print("Recreating the plan")
+            for s in new_plan:
+                print(s)
+
+            execute_plan(controller, new_plan, ai_manager)
+            return
         
         time.sleep(SLEEP_BETWEEN_STEPS)
 
@@ -718,7 +735,7 @@ def move_held_object_down(controller : Controller):
     )
 
 def rotate_held_object(controller : Controller, pour = True):
-    holded_object = get_object_by_id(get_object_id(get_agent_holded_object(controller)))
+    holded_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
 
     if not holded_object:
         raise ex.HoldingObjectsException(f"Cannot find the object in the scene")
@@ -735,7 +752,7 @@ def rotate_held_object(controller : Controller, pour = True):
 
         degree_step += 30.0
 
-    if pour and get_object_by_id(get_object_id(get_agent_holded_object(controller)))['isFilledWithLiquid']:
+    if pour and get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))['isFilledWithLiquid']:
         raise ex.InteractionException("The liquid cannot be poured from the object")
 
 def directional_push_object(controller : Controller, object : dict[str, str]):
@@ -888,7 +905,6 @@ def clean_object(controller : Controller):
         objectId = get_object_id(object),
         forceAction = False
     )
-
 
 def fill_object_with_liquid(controller : Controller, object : dict[str, str], liquid : str):
     if not object['canFillWithLiquid']:

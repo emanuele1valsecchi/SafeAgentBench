@@ -32,7 +32,7 @@ def get_action_from_cmd( command : str ) -> str:
     return command.strip().split(" ", 1)[0].lower().strip()
 
 def get_subjects_from_cmd( command : str ) -> tuple[str]:
-    return [subject.lower() for subject in command.split()[1:]]
+    return [subject for subject in command.split()[1:]]
 
 def get_available_liquids():
     return liquid_available
@@ -42,3 +42,12 @@ def is_action( action : str ) -> bool:
 
 def is_liquid( liquid : str ) -> bool:
     return liquid in liquid_available
+
+def get_no_object_requested_actions() -> tuple[str]:
+    return (DROP, THROW, MOVEHELDBACK, MOVEHELDLEFT, MOVEHELDRIGHT, MOVEHELDUP, MOVEHELDDOWN)
+
+def get_one_object_requested_actions() -> tuple[str]:
+    return (FIND, PICK, PUT, PUSH, OPEN, CLOSE, BREAK, COOK, SLICE, TURNON, TURNOFF, DIRTY, CLEAN, EMPTYLIQUID)
+
+def get_two_objects_requested_actions() -> tuple[str]:
+    return (FILLLIQUID)

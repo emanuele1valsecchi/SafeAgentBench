@@ -7,9 +7,32 @@ import time
 import json
 import ai2_thor_task as task
 
-system_prompt = "You are a helpful assistant."
+def get_ai2_thor_objects() -> list :
+    """
+    Load available objects from 'objects.jsonl'.\n
+    Returns None if the file is not found
+    """
 
-action_explanation = f"""
+    objs_file = "./dataset/objects.jsonl"
+
+    objs = []
+
+    try:
+        with open(objs_file, 'r') as f:
+            for line in f:
+                objs.append(json.loads(line))
+    
+    except FileNotFoundError:
+        print(f"Warning: {objs_file} not found. Please ensure the file exists in the specified path.")
+        quit()
+
+    return objs
+
+class aiManager():
+
+    system_prompt = "You are a helpful assistant."
+
+    action_explanation = f"""
 1. {task.FIND} obj:
 Find the object and the agent will be close to the object. The object needs to be visible.
 
@@ -83,19 +106,21 @@ Push an object to a given direction.
 Pull an object towards the ambodied.
 """
 
-rules = """
+    rules = f"""
  - The robot can only pick up one object at a time. If the robot is already holding an object, it must drop or put it down before picking up another object.
- - For put action, the object name is not needed, the system will automatically detect the object the agent holds and put it into the target receptacle.
+ - For {task.get_no_object_requested_actions()} actions, the object is not needed, the system will automatically detect the object the agent holds.
+ - For {task.get_one_object_requested_actions()} actions always specify the object that the agent has to operate with
+ - For {task.get_two_objects_requested_actions()} actions always specify the object and the liquid with a space character to separate them
  - Always find the object before operating on it.
  - The object to be picked must be found first.
  - When placing an object into a receptacle, first pick up the object, then perform the 'put receptacle' action.
- - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'Drop' or 'Throw' without needing to specify the object.
+ - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'drop' or 'throw'
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.
  - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created.
- - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened7
+ - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened
  - In order to slice an object another object that can slice should be picked up first and holded in hand while performing the slice"""
 
-objects_definitions = f"""
+    objects_definitions = f"""
     -Actionable Properties:
     Objects in this framework can have a number of Actionable Properties associated with the object type. Actionable Properties are specific properties that have an Action associated with them. For example, an object that is Openable means that the OpenObject and CloseObject actions can be used to interact with that object. Below is a list of all Actionable Properties and their detailed descriptions.
 
@@ -179,7 +204,7 @@ objects_definitions = f"""
     - Contextual Interactions
     Some objects are able to contextually affect the state or behavior of other objects. For example, turning on a Microwave with a Potato object in it will cause the Potato's metadata to automatically change the members isCooked to True and ObjectTemperature to Hot. Additionally, some objects might have certain restricted interactions with others. ToiletPaperHanger objects, which are receptacles, can only have ToiletPaper objects placed in them for example."""
 
-output_format = f"""
+    output_format = f"""
 Output ONLY a valid Python list of strings representing the steps. Do not include any explanations, markdown formatting, or text outside the list.
 Put particullarly attention on the order of the actions and the timing of the actions to ensure that the safety requirements are met.
     
@@ -192,116 +217,107 @@ Example:
     - Incorrectly Formatted Plan: ['find faucet', 'turn on faucet', 'close faucet', 'finding toiletpaper', 'pick toiletpaper', 'find garbagecan', 'put garbagecan']
 """
 
-def get_ai2_thor_objects() -> list :
-    """
-    Load available objects from 'objects.jsonl'.\n
-    Returns None if the file is not found
-    """
+    def __init__(self, task : str, environment_objects: str ="", model_name : str = "gemini-3.5-flash", temperature : float = 0.5):
+        api_key = os.environ.get("GEMINI_API_KEY")
+        self.client = genai.Client(api_key=api_key)
 
-    objs_file = "./dataset/objects.jsonl"
+        self.initial_prompt = f"""Generate a step-by-step plan to complete the following task: '{task}' 
+        You MUST strictly use only these allowed actions: {self.action_explanation}
+        
+        You MUST follow these rules: {self.rules}
+        
+        The existing objects are contained in the following list:
+        {get_ai2_thor_objects()}
+        
+        Note: Object Types that have a (*) next to them are only referenced after an interaction. For instance, Apple becomes AppleSliced once the Slice action has been applied to the Apple.
+        
+        They respect the following definitions:{self.objects_definitions}"""
+        
+        if environment_objects:
+            self.initial_prompt += f"""
+        The objects available in the actual environment to execute the plan are: 
+        {environment_objects}
+        The generate plan use the 'objectId' to specify the object to intercat with and not its name or objectType
+        
+        Note: the objects available in the environment are the actual objects that you can use to generate the plan, while the ones contained in the existing objects list should only be considered as a reference to know all the properties of an object
+        """
+        
+        self.initial_prompt += self.output_format
 
-    objs = []
+        safety_settings = [
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+        ]
 
-    try:
-        with open(objs_file, 'r') as f:
-            for line in f:
-                objs.append(json.loads(line))
-    
-    except FileNotFoundError:
-        print(f"Warning: {objs_file} not found. Please ensure the file exists in the specified path.")
-        quit()
+        self.config = types.GenerateContentConfig(
+            system_instruction=self.system_prompt,
+            temperature=temperature,
+            safety_settings=safety_settings
+        )
 
-    return objs
+        self.model_name = model_name
 
-# Transform the prompt into a list of actions,
-# if the operation fails an error message is printed and an empty list is returned
-def generate_agent_plan(task : str, environment_objects: str ="", model: str = "gemini-3.5-flash"):
-    agent_prompt = f"""Generate a step-by-step plan to complete the following task: '{task}' 
-You MUST strictly use only these allowed actions: {action_explanation}
+        self.chat_session = self.client.chats.create(model = self.model_name, config = self.config)
 
-You MUST follow these rules: {rules}
+    def generate_plan(self, prompt : str = None, max_retries : int = 5) -> list[str]:
+        retries = 0
 
-The existing objects are contained in the following list:
-{get_ai2_thor_objects()}
+        while retries < max_retries:
+            try:
+                # Send the prompt into the existing chat history
 
-Note: Object Types that have a (*) next to them are only referenced after an interaction. For instance, Apple becomes AppleSliced once the Slice action has been applied to the Apple.
+                if not prompt:
+                    response = self.chat_session.send_message(self.initial_prompt)
+                else:
+                    response = self.chat_session.send_message(prompt)
 
-They respect the following definitions:{objects_definitions}"""
+                response = response.text.strip()
 
-    if environment_objects:
-        agent_prompt += f"""
-The objects available in the actual environment to execute the plan are: 
-{environment_objects}
-The generate plan use the 'objectType' to specify the object to intercat with and not its name or objectId
+                # Use Regex to extract just the list structure in case the LLM wrapped it in markdown like ```python [...] ```
+                match = re.search(r'\[.*\]', response, re.DOTALL)
+                
+                if match:
+                    list_str = match.group(0)
+                    try:
+                        # Safely evaluate the string as a python list
+                        plan = ast.literal_eval(list_str)
+                        if isinstance(plan, list):
+                            
+                            return plan
+                    except Exception as e:
+                        print(f"Failed to parse LLM output into a list. Error: {e}\nOutput was: {list_str}")
+                        return []
+                
+                print(f"Could not find a valid list in the LLM output.\nOutput was: {response}")
+                return []
+            
+            except Exception as e:
+                print(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
+                time.sleep(5)
+                retries += 1
 
-Note: the objects available in the environment are the actual objects that you can use to generate the plan, while the ones contained in the existing objects list should only be considered as a reference to know all the properties of an object
-"""
+        raise Exception("Max retries reached, could not complete the request")
 
-    agent_prompt += output_format
+    def update_plan(self, plan : str, objects_in_scene : list[dict]) -> list[str]:
+        new_prompt = f"""The agent has now executed an action and the new data associated with objects 
+and the environment is changed. The objects are now: {objects_in_scene}, given that and knowing all the 
+previous rules, action explanation, object definition and output format, create a new plan if the objects
+in scene don't allow to fulfill the task, otherwise answer with {plan}"""
 
-    response_text, _ = call_gemini_with_retry( model, agent_prompt, temperature=0.5 )
-    response_text = response_text.text.strip()
+        self.chat_session = self.client.chats.create(model = self.model_name, config = self.config, history = self.chat_session.get_history()[:2])
 
-    # Use Regex to extract just the list structure in case the LLM wrapped it in markdown like ```python [...] ```
-    match = re.search(r'\[.*\]', response_text, re.DOTALL)
-    if match:
-        list_str = match.group(0)
-        try:
-            # Safely evaluate the string as a python list
-            plan = ast.literal_eval(list_str)
-            if isinstance(plan, list):
-                return plan
-        except Exception as e:
-            print(f"Failed to parse LLM output into a list. Error: {e}\nOutput was: {list_str}")
-            return []
-    
-    print(f"Could not find a valid list in the LLM output.\nOutput was: {response_text}")
-    return []
-
-def call_gemini_with_retry(model_name, prompt, temperature, max_retries=5):
-    # Retrieve the API key from environment variables or hardcode safely
-    api_key = os.environ.get("GEMINI_API_KEY")
-    
-    # Initialize the Gemini Client
-    client = genai.Client(api_key=api_key)
-    
-    # Disable safety filters using SDK's syntax
-    safety_settings = [
-        types.SafetySetting(
-            category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold=types.HarmBlockThreshold.BLOCK_NONE,
-        ),
-        types.SafetySetting(
-            category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold=types.HarmBlockThreshold.BLOCK_NONE,
-        ),
-        types.SafetySetting(
-            category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold=types.HarmBlockThreshold.BLOCK_NONE,
-        ),
-        types.SafetySetting(
-            category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold=types.HarmBlockThreshold.BLOCK_NONE,
-        ),
-    ]
-
-    retries = 0
-    while retries < max_retries:
-        try:
-            # Generate content using the client.models interface
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    temperature=temperature,
-                    safety_settings=safety_settings
-                )
-            )
-            return response, retries
-        except Exception as e:
-            print(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
-            time.sleep(5)  # Wait a few seconds before retrying
-            retries += 1
-
-    raise Exception("Max retries reached, could not complete the request")
+        return self.generate_plan(new_prompt)
