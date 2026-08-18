@@ -55,6 +55,20 @@ def print_object_info(object : dict[str, str], *args : str):
         elif k in args:
             print(f"{k} : {v}")
 
+def is_sublist( list_a : list, list_b : list):
+    """Checks if list_b is a list contained in list_a
+    Args:
+        list_a: a list of any default python type
+        list_b: a list of any default python type
+
+    Returns:
+        True: if list_b is contained in list_a
+        False: if list_b is NOT contained in list_a"""
+    a_str = ','.join(map(str, list_a))
+    b_str = ','.join(map(str, list_b))
+
+    return a_str.find(b_str) != -1
+
 # === POSITION ===
 def get_agent_position(controller : Controller) -> dict:
     return controller.last_event.metadata['agent']['position']
@@ -534,7 +548,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         if i != (len(plan) - 1):
             new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
 
-            if (not (new_plan == plan)) and (new_plan not in plan):
+            if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
                 return False, new_plan
         
         time.sleep(SLEEP_BETWEEN_STEPS)
