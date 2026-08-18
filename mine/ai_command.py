@@ -119,7 +119,8 @@ Pull an object towards the ambodied.
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.
  - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created.
  - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened
- - In order to slice an object another object that can slice should be picked up first and holded in hand while performing the slice"""
+ - In order to slice an object another object that can slice should be picked up first and holded in hand while performing the slice
+ - If the agent has just executed an action to a object it has not to find it again in order to interact again with it"""
 
     objects_definitions = f"""
     -Actionable Properties:
