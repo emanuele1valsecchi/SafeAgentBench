@@ -113,6 +113,7 @@ Pull an object towards the ambodied.
  - For {task.get_two_objects_requested_actions()} actions always specify the object and the liquid with a space character to separate them
  - Always find the object before operating on it.
  - The object to be picked must be found first.
+ - Prefer the put action instead of the drop action if not specifically requested in the task assigned to the agent
  - When placing an object into a receptacle, first pick up the object, then perform the 'put receptacle' action.
  - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'drop' or 'throw'
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.

@@ -400,7 +400,7 @@ def get_agent_holded_object(controller : Controller):
     
 # === TASK EXECUTION ===
 
-def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager) -> int:
+def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager) -> tuple[bool, list[str]]:
     """Execute the plan in the Ai2Thor environment
     
     Args:
@@ -533,15 +533,12 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
 
         new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
 
-        if not (new_plan == plan):
-            print("Recreating the plan")
-            for s in new_plan:
-                print(s)
-
-            execute_plan(controller, new_plan, ai_manager)
-            return
+        if (not (new_plan == plan)) and (new_plan not in plan):
+            return False, new_plan
         
         time.sleep(SLEEP_BETWEEN_STEPS)
+
+    return True, None
 
 def resilient_execution(controller : Controller, **kwargs):
     controller.step(**kwargs)
@@ -554,6 +551,14 @@ def resilient_execution(controller : Controller, **kwargs):
 
             if last_action_state(controller):
                 break
+
+            if i == (MAX_ATTEMPTS - 1):
+
+                for k in kwargs.keys():
+                    if k == "forceAction":
+                        kwargs[k] = True
+
+                controller.step(**kwargs)
         else:
             raise ex.Ai2THORException(controller)
     
