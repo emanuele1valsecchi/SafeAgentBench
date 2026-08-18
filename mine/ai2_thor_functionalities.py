@@ -408,7 +408,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         plan: list of instructione that the embodied has to execute
     """
     
-    for step in plan:
+    for i, step in enumerate(plan):
 
         action = task.get_action_from_cmd( step )
 
@@ -531,10 +531,11 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
             case _:
                 print(f"Action '{action}' not allowed")
 
-        new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
+        if i != (len(plan) - 1):
+            new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
 
-        if (not (new_plan == plan)) and (new_plan not in plan):
-            return False, new_plan
+            if (not (new_plan == plan)) and (new_plan not in plan):
+                return False, new_plan
         
         time.sleep(SLEEP_BETWEEN_STEPS)
 
