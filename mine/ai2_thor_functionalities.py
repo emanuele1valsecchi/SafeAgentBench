@@ -589,6 +589,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         
         time.sleep(SLEEP_BETWEEN_STEPS)
 
+    rye_manager.save_to_json()
     return True, None
 
 def resilient_execution(controller : Controller, **kwargs):
