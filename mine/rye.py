@@ -81,6 +81,9 @@ class RyeManager:
         with open("./dataset/sys_behavior.json", "r") as f:
             self.read_data = json.load(f)
 
+    def encode_empty_action(self):
+        self.update_state({})
+
     def encode_pick(self, object_type : str, receptacle : str):
         self.update_state({object_type + "_in_hand" : True,
                            object_type + "_in_" + receptacle : False})
@@ -91,7 +94,8 @@ class RyeManager:
         
     def encode_drop(self, object_type : str, receptacle : str):
         # Equal to encode_put, if needed can be modified for future releases
-        self.update_state({object_type + "_in_" + receptacle : True})
+        self.update_state({object_type + "_in_" + receptacle : True,
+                           object_type + "_in_hand" : False})
 
     def encode_throw(self, object_type : str, receptacle : str):
         self.update_state({object_type + "_in_" + receptacle : False,

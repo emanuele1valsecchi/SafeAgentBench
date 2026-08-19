@@ -169,9 +169,3 @@ while not executed:
 u.print_separator()
 
 u.wait_ui("Simulation complete.", "Press Enter to exit")
-
-for obj in controller.last_event.metadata['objects']:
-    for k, v in obj.items():
-        if k == "objectType" and v == "Potato":
-            ai2thor_func.print_object_info(obj)
-            print()

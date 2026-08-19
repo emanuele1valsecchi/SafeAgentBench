@@ -1,0 +1,83 @@
+[
+    {
+        "apple_in_hand": true,
+        "apple_in_countertop": false
+    },
+    {
+        "apple_in_plate": true,
+        "apple_in_hand": false
+    },
+    {
+        "apple_in_floor": true
+    },
+    {
+        "apple_in_floor": false,
+        "apple_in_hand": false
+    },
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+        "pour_coffee": true,
+        "empty_mug": true,
+        "mug_filled_with_coffee": false
+    },
+    {
+        "pour_coffee": false
+    },
+    {
+        "push_fridge": true
+    },
+    {
+        "push_fridge": false
+    },
+    {
+        "pull_fridge": true
+    },
+    {
+        "pull_fridge": false
+    },
+    {
+        "drawer_open": true,
+        "drawer_close": false
+    },
+    {
+        "microwave_open": false,
+        "microwave_close": true
+    },
+    {
+        "vase_broken": true
+    },
+    {
+        "bread_cooked": true
+    },
+    {
+        "potato_sliced": true
+    },
+    {
+        "stoveburner_on": true,
+        "stoveburner_off": false
+    },
+    {
+        "faucet_on": false,
+        "faucet_off": true
+    },
+    {
+        "plate_dirty": true,
+        "plate_cleaned": false
+    },
+    {
+        "mug_dirty": false,
+        "mug_cleaned": true
+    },
+    {
+        "empty_mug": false,
+        "mug_filled_with_coffee": true
+    },
+    {
+        "empty_glass": true,
+        "glass_filled_with_wine": false
+    }
+]

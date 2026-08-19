@@ -9,6 +9,7 @@ import math
 import networkx as nx
 import custom_exceptions as ex
 import ai_command as ai_cmd
+import rye
 
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
@@ -377,6 +378,9 @@ def get_objects_around(controller: Controller, **kwargs):
 def get_object_parent_receptacles(object : dict):
     return object['parentReceptacles']
 
+def get_object_parent_receptacles_type(controller : Controller, object : dict):
+    return get_object_type(get_object_by_id(controller, get_object_parent_receptacles(object)[0]))
+
 def is_object_interactable(object : dict):
     return object['visible'] and object['isInteractable']
 
@@ -411,7 +415,10 @@ def get_agent_holded_object(controller : Controller):
         raise ex.HoldingObjectsException("To many objects in hand")
 
     return inventory_objects[0]
-    
+
+def get_liquid_inside(object : dict[str, str]) -> str:
+    return object['fillLiquid']
+
 # === TASK EXECUTION ===
 
 def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None) -> tuple[bool, list[str]]:
@@ -421,6 +428,8 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         controller: the Ai2Thor controller
         plan: list of instructione that the embodied has to execute
     """
+
+    rye_manager = rye.RyeManager()
     
     for i, step in enumerate(plan):
 
@@ -475,75 +484,102 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
 
             case task.PICK:
                 pick_up_object(controller, obj)
+                rye_manager.encode_pick(get_object_type(obj).lower(), get_object_parent_receptacles_type(controller, obj).lower())
 
             case task.PUT:
+                holded_object_type = get_object_type(get_agent_holded_object(controller))
                 put_object(controller, obj)
+                rye_manager.encode_put(holded_object_type.lower(), get_object_type(obj).lower())
 
             case task.DROP:
+                held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 drop_object(controller)
+                rye_manager.encode_drop(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
 
             case task.THROW:
+                held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 throw_object(controller)
+                rye_manager.encode_throw(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
 
             case task.MOVEHELDBACK:
                 move_held_object_back(controller)
+                rye_manager.encode_moveheldback()
 
             case task.MOVEHELDLEFT:
                 move_held_object_left(controller)
+                rye_manager.encode_moveheldleft()
 
             case task.MOVEHELDRIGHT:
                 move_held_object_right(controller)
+                rye_manager.encode_moveheldright()
 
             case task.MOVEHELDUP:
                 move_held_object_up(controller)
+                rye_manager.encode_moveheldup()
 
             case task.MOVEHELDDOWN:
                 move_held_object_down(controller)
+                rye_manager.encode_moveheldown()
 
             case task.POUR:
+                held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 rotate_held_object(controller)
+                rye_manager.encode_pour(get_object_type(held_object).lower(), get_liquid_inside(held_object).lower())
 
             case task.PUSH:
                 directional_push_object(controller, obj)
+                rye_manager.encode_push(get_object_type(obj))
 
             case task.PULL:
                 direction_pull_object(controller, obj)
+                rye_manager.encode_pull(get_object_type(obj))
 
             case task.OPEN:
                 open_object(controller, obj)
+                rye_manager.encode_open(get_object_type(obj))
 
             case task.CLOSE:
                 close_object(controller, obj)
+                rye_manager.encode_close(get_object_type(obj))
 
             case task.BREAK:
                 break_object(controller, obj)
+                rye_manager.encode_break(get_object_type(obj))
 
             case task.COOK:
                 cook_object(controller, obj)
+                rye_manager.encode_cook(get_object_type(obj))
 
             case task.SLICE:
                 slice_object(controller, obj)
+                rye_manager.encode_slice(get_object_type(obj))
 
             case task.TURNON:
                 toggle_object_on(controller, obj)
+                rye_manager.encode_turnon(get_object_type(obj))
 
             case task.TURNOFF:
-                toggle_object_off(controller)
+                toggle_object_off(controller, obj)
+                rye_manager.encode_turnoff(get_object_type(obj))
 
             case task.DIRTY:
                 dirty_object(controller, obj)
+                rye_manager.encode_dirty(get_object_type(obj))
 
             case task.CLEAN:
                 clean_object(controller, obj)
+                rye_manager.encode_clean(get_object_type(obj))
 
             case task.FILLLIQUID:
                 fill_object_with_liquid(controller, obj, liquid)
+                rye_manager.encode_push(get_object_type(obj), liquid)
 
             case task.EMPTYLIQUID:
                 empty_object_from_liquid(controller, obj)
+                rye_manager.encode_emptyliquid(get_object_type(obj), get_liquid_inside(obj))
 
             case _:
-                print(f"Action '{action}' not allowed")
+                raise ex.BadActionFormat(f"Action '{action}' not allowed")
 
         if (i != (len(plan) - 1)) and ai_manager:
             new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
@@ -893,7 +929,7 @@ def toggle_object_on(controller : Controller, object : dict[str, str]):
         forceAction = False
     )
 
-def toggle_object_off(controller : Controller):
+def toggle_object_off(controller : Controller, object : dict[str, str]):
     if not object['toggleable']:
         raise ex.InteractionException(f"{get_object_type(object).capitalize()} cannot be toggled off")
     elif not object['isToggled']:
@@ -917,7 +953,7 @@ def dirty_object(controller : Controller, object : dict[str, str]):
         forceAction = False
     )
 
-def clean_object(controller : Controller):
+def clean_object(controller : Controller, object : dict[str, str]):
     if not object['dirtyable']:
         raise ex.InteractionException(f"{object['name'].capitalize()} cannot be cleaned since it cannot be dirty")
     elif not object['isDirty']:
