@@ -1,5 +1,5 @@
-def print_separator():
-    print("\n" + "=" * 100 + "\n")
+def print_separator(char_numb = 60):
+    print("\n" + "=" * char_numb + "\n")
 
 def yn_question(question: str):
     resp = ""
