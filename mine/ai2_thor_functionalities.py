@@ -414,7 +414,7 @@ def get_agent_holded_object(controller : Controller):
     
 # === TASK EXECUTION ===
 
-def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager) -> tuple[bool, list[str]]:
+def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None) -> tuple[bool, list[str]]:
     """Execute the plan in the Ai2Thor environment
     
     Args:
@@ -528,7 +528,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
                 toggle_object_on(controller, obj)
 
             case task.TURNOFF:
-                toggle_object_off(controller, obj)
+                toggle_object_off(controller)
 
             case task.DIRTY:
                 dirty_object(controller, obj)
@@ -545,7 +545,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
             case _:
                 print(f"Action '{action}' not allowed")
 
-        if i != (len(plan) - 1):
+        if (i != (len(plan) - 1)) and ai_manager:
             new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
 
             if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
@@ -574,6 +574,9 @@ def resilient_execution(controller : Controller, **kwargs):
                         kwargs[k] = True
 
                 controller.step(**kwargs)
+
+                if last_action_state(controller):
+                    break
         else:
             raise ex.Ai2THORException(controller)
     
