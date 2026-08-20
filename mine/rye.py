@@ -38,8 +38,10 @@ faulty_sys_behavior = [
     dict(door_open_warning=True),
 ]
 
+#pattern = r"(historically[0:5]{door_open} and not {dow_suppressed}) -> {door_open_warning}"
+#
 #my_monitor_1 = reelay.discrete_timed_monitor(
-#    pattern=r"(historically[0:5]{door_open} and not {dow_suppressed}) -> {door_open_warning}", condense=False)
+#    pattern=pattern, condense=False)
 #
 #my_monitor_2 = reelay.discrete_timed_monitor(
 #    pattern=r"{door_open_warning} -> historically[0:5]{door_open}", condense=False)
@@ -50,7 +52,7 @@ faulty_sys_behavior = [
 #my_monitor_4 = reelay.discrete_timed_monitor(
 #    pattern=r"{door_open_warning} -> not(pre({door_open} since {door_open_warning}))", condense=False)
 #
-#for x in faulty_sys_behavior:  # Change to correct_sys_behavior
+#for x in correct_sys_behavior:  # Change to correct_sys_behavior
 #    r1 = my_monitor_1.update(x)
 #    r2 = my_monitor_2.update(x)
 #    r3 = my_monitor_3.update(x)
@@ -58,6 +60,8 @@ faulty_sys_behavior = [
 #
 #    if r1["value"] is False:
 #        print('Error at {err_time} : False negative detected (SYS-REQ-01 Violation)'.format(err_time=my_monitor_1.now()))
+#    else:
+#        print(f"No error at {my_monitor_1.now()}")
 #    if r2["value"] is False:
 #        print('Error at {err_time} : False positive detected (SYS-REQ-01 Violation)'.format(err_time=my_monitor_2.now()))
 #    if r3["value"] is False:
@@ -80,6 +84,24 @@ class RyeManager:
     def read_from_json(self):
         with open("./dataset/sys_behavior.json", "r") as f:
             self.read_data = json.load(f)
+
+    def analysis(self, rye_pattern : str):
+
+        if not rye_pattern or len(rye_pattern) < 1:
+            raise Exception("The action cannot be performed without a Reelay Expression to test")
+
+        self.read_from_json()
+
+        monitor = reelay.discrete_timed_monitor(pattern = repr(rye_pattern)[1:-1], condense = False)
+
+        for x in self.read_data:
+            r = monitor.update(x)
+
+            if r['value'] is False:
+                print(f"Error at {monitor.now()}:\n RYE: '{rye_pattern}'\n was not respected\n")
+                break
+        else:
+            print(f"RYE '{rye_pattern}' is respected throught the execution")
 
     def encode_empty_action(self):
         self.update_state({})
@@ -171,54 +193,56 @@ class RyeManager:
         self.update_state({"empty_" + object_type : True,
                            object_type + "_filled_with_" + liquid : False})
 
-r = RyeManager()
-
-r.encode_pick("apple", "countertop")
-
-r.encode_put("apple", "plate")
-
-r.encode_drop("apple", "floor")
-
-r.encode_throw("apple", "floor")
-
-r.encode_moveheldback()
-
-r.encode_moveheldleft()
-
-r.encode_moveheldright()
-
-r.encode_moveheldup()
-
-r.encode_moveheldown()
-
-r.encode_pour("mug", "coffee")
-
-r.encode_push("fridge")
-
-r.encode_pull("fridge")
-
-r.encode_open("drawer")
-
-r.encode_close("microwave")
-
-r.encode_break("vase")
-
-r.encode_cook("bread")
-
-r.encode_slice("potato")
-
-r.encode_turnon("stoveburner")
-
-r.encode_turnoff("faucet")
-
-r.encode_dirty("plate")
-
-r.encode_clean("mug")
-
-r.encode_fillliquid("mug", "coffee")
-
-r.encode_emptyliquid("glass", "wine")
-
-r.save_to_json()
-
-print(r.store_data)
+#r = RyeManager()
+#
+#pattern = "!(P({stoveburner_on : True} && Y({stoveburner_on : True}) && Y(Y({stoveburner_on : True})) && Y(Y(Y({stoveburner_on : True})))))"
+#
+#r.analysis(pattern)
+#
+#r.encode_pick("apple", "countertop")
+#
+#r.encode_put("apple", "plate")
+#
+#r.encode_drop("apple", "floor")
+#
+#r.encode_throw("apple", "floor")
+#
+#r.encode_moveheldback()
+#
+#r.encode_moveheldleft()
+#
+#r.encode_moveheldright()
+#
+#r.encode_moveheldup()
+#
+#r.encode_moveheldown()
+#
+#r.encode_pour("mug", "coffee")
+#
+#r.encode_push("fridge")
+#
+#r.encode_pull("fridge")
+#
+#r.encode_open("drawer")
+#
+#r.encode_close("microwave")
+#
+#r.encode_break("vase")
+#
+#r.encode_cook("bread")
+#
+#r.encode_slice("potato")
+#
+#r.encode_turnon("stoveburner")
+#
+#r.encode_turnoff("faucet")
+#
+#r.encode_dirty("plate")
+#
+#r.encode_clean("mug")
+#
+#r.encode_fillliquid("mug", "coffee")
+#
+#r.encode_emptyliquid("glass", "wine")
+#
+#r.save_to_json()
