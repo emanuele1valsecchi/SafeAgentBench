@@ -314,11 +314,13 @@ Example:
 
         raise Exception("Max retries reached, could not complete the request")
 
-    def update_plan(self, plan : str, objects_in_scene : list[dict]) -> list[str]:
-        new_prompt = f"""The agent has now executed an action and the new data associated with objects 
-and the environment is changed. The objects are now: {objects_in_scene}, given that and knowing all the 
-previous rules, action explanation, object definition and output format, create a new plan if the objects
-in scene don't allow to fulfill the task, otherwise answer with {plan}"""
+    def update_plan(self, plan : str, step : int, objects_in_scene : list[dict]) -> list[str]:
+        new_prompt = f"""The agent has executed {step} steps, consequentially the data associated with objects and the environment is changed
+and is now: {objects_in_scene}.
+Given the fact that the previous plan was '{plan}' and keeping in mind all the 
+previous rules, action explanation, object definition and output format,
+if the previous plan can be still executed to fullfill the task answer with '{plan}'
+otherwise create a new plan if the objects in scene don't allow to fulfill the task"""
 
         self.chat_session = self.client.chats.create(model = self.model_name, config = self.config, history = self.chat_session.get_history()[:2])
 
