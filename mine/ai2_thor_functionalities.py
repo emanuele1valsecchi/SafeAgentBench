@@ -572,7 +572,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
 
             case task.FILLLIQUID:
                 fill_object_with_liquid(controller, obj, liquid)
-                rye_manager.encode_push(get_object_type(obj), liquid)
+                rye_manager.encode_fillliquid(get_object_type(obj), liquid)
 
             case task.EMPTYLIQUID:
                 empty_object_from_liquid(controller, obj)
@@ -582,7 +582,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
                 raise ex.BadActionFormat(f"Action '{action}' not allowed")
 
         if (i != (len(plan) - 1)) and ai_manager:
-            new_plan = ai_manager.update_plan(plan, get_objects_in_scene(controller))
+            new_plan = ai_manager.update_plan(plan, (i + 1), get_objects_in_scene(controller))
 
             if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
                 return False, new_plan
