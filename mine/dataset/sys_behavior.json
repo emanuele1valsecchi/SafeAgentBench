@@ -1,18 +1,26 @@
 [
     {
+        "StoveKnob_on": true,
+        "StoveKnob_off": false
+    },
+    {
+        "StoveKnob_on": false,
+        "StoveKnob_off": true
+    },
+    {
+        "empty_Mug": false,
+        "Mug_filled_with_coffee": true
+    },
+    {
         "mug_in_hand": true,
-        "mug_in_diningtable": false
+        "mug_in_countertop": false
     },
     {
-        "mug_in_coffeemachine": true,
-        "mug_in_hand": false
+        "pour_coffee": true,
+        "empty_mug": true,
+        "mug_filled_with_coffee": false
     },
     {
-        "CoffeeMachine_on": true,
-        "CoffeeMachine_off": false
-    },
-    {
-        "CoffeeMachine_on": false,
-        "CoffeeMachine_off": true
+        "pour_coffee": false
     }
 ]
