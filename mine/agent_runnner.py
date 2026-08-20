@@ -3,8 +3,75 @@ import json
 import ai2_thor_functionalities as ai2thor_func
 import ai_command as ai_cmd
 import utils as u
+import rye
 
 scenes = {}
+
+def load_pre_defined_setup() -> tuple[str | None, str | None, str | None, str | None, str | None]:
+    """Load predefined scene and task from 'kitchen_tasks_and_constraints.jsonl'"""
+
+    try:
+        with open("./dataset/kitchen_tasks_and_constraints.json", "r") as f:
+            pre_defined_list = json.load(f)
+    except:
+        print("Error in loading pre defined tasks. Please ensure the file exists in the specified path")
+
+    print("Available pre defined use case:")
+
+    for i, use_case in enumerate(pre_defined_list):
+        print(f"{i+1}) Scene: {use_case['scene_name']}\
+              \n   Instruction: {use_case['instruction']}\
+              \n   Requirement: {use_case['requirement']}\
+              \n   Reference steps: {use_case['reference_steps']}\
+              \n   Reelay Expression: {use_case['reelay_expression']}\n")
+
+    u.print_separator()
+
+    scenes.clear()
+
+    chosen_scene = None
+    chosen_instruction = None
+    chosen_requirement = None
+    chosen_reference_steps = None
+    chosen_reelay_expression = None
+
+    if u.yn_question(f"Do you want to load a pre defined use case?"):
+        use_case = u.req_not_empty_value("Inser the use case number to load: ").strip()
+
+        try:
+            use_case = int(use_case) - 1
+
+            if use_case > len(pre_defined_list) or use_case < 0:
+                raise Exception
+    
+            chosen_case = pre_defined_list[use_case]
+    
+            chosen_scene = chosen_case['scene_name']
+            chosen_instruction = chosen_case['instruction']
+            chosen_requirement = chosen_case['requirement']
+            chosen_reference_steps = chosen_case['reference_steps']
+            chosen_reelay_expression = chosen_case['reelay_expression']
+
+            print(f"\nLoading use case: {(use_case + 1)}\
+                  \n  Scene: {chosen_scene}\
+                  \n  Instruction: {chosen_instruction}\
+                  \n  Requirement: {chosen_requirement}\
+                  \n  Reference steps: {chosen_reference_steps}\
+                  \n  Reelay Expression: {chosen_reelay_expression}")
+
+            u.print_separator()
+
+            print("Start simulation")
+
+            u.print_separator()
+        except:
+            print("The input is not valid, no pre defined use case will be loaded")
+    else:
+        u.wait_ui(end_message = "Press enter to manually configure the use case")
+
+        u.print_separator()
+
+    return chosen_scene, chosen_instruction, chosen_requirement, chosen_reference_steps, chosen_reelay_expression
 
 def load_available_scenes():
     """
@@ -113,17 +180,29 @@ def define_task(*, instruction : str = "slice an apple",
     return f"{instruction}. Requirement: {requirement}", [step.strip() for step in steps_ref.split(",") if step.strip()]
 
 # ==========================
+# Set to True to execute 
+user_controlled = True
 
-load_available_scenes()
+chosen_scene = "FloorPlan1"
+chosen_reelay_expression = ""
 
-display_available_scenes()
+if user_controlled:
+    chosen_scene, chosen_instruction, chosen_requirement, chosen_reference_steps, chosen_reelay_expression = load_pre_defined_setup()
 
-chosen_scene = choose_scene()
+    if not chosen_scene:
+        load_available_scenes()
+
+        display_available_scenes()
+
+        chosen_scene = choose_scene()
+    else:
+        user_controlled = False
+else:
+    chosen_instruction = "put a mug in the coffee machine"
+    chosen_requirement = "the coffee machine should be turned on when the mug is putted inside it and then turned off"
+    chosen_reference_steps = "find potato, pick potato, find floor, drop"
 
 controller = ai2thor_func.create_controller(scene=chosen_scene, width = 1280, height = 720)
-
-# Set to false to execute default instruction
-user_controlled = False
 
 objs = scan_ambient(controller, fake = user_controlled)
 
@@ -132,9 +211,9 @@ if user_controlled:
 
 #instruction, requirement and steps_ref can be deleted to execute the slice apple and put fridge routine
 task, steps_ref = define_task(
-    instruction = "put a mug in the coffee machine",
-    requirement = "the coffee machine should be turned on when the mug is putted inside it and then turned off",
-    steps_ref = "find potato, pick potato, find floor, drop",
+    instruction = chosen_instruction,
+    requirement = chosen_requirement,
+    steps_ref = chosen_reference_steps,
     question = user_controlled
 )
 
@@ -163,9 +242,24 @@ while not executed:
     executed, ai_steps = ai2thor_func.execute_plan(controller, ai_steps, ai_manager)
 
     if not executed:
+        u.print_separator()
         print("\n Recreating the plan\n")
         u.print_separator()
 
 u.print_separator()
 
-u.wait_ui("Simulation complete.", "Press Enter to exit")
+if chosen_reelay_expression:
+    u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis")
+
+    rye_manager = rye.RyeManager()
+
+    rye_manager.analysis(chosen_reelay_expression)
+
+    u.print_separator()
+
+else:
+    u.wait_ui("Simulation complete.", "Press Enter to close the program")
+
+u.wait_ui( end_message = "Press Enter to exit the program")
+
+controller.stop()
