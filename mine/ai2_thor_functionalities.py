@@ -18,9 +18,14 @@ TARGET_MAX_DISTANCE = 1.0
 MAX_ATTEMPTS = 20 # NUmber of times an action is repeated before throwing an exception and closing the program
 
 # === CREATION ===
-def create_controller(agentMode = "default", visibilityDistance = 1.5, scene = "FloorPlan1", 
-                      gridSize = 0.1, snapToGrid = False, rotationStepDegrees = 1,
-                      renderDepthImage = True, renderInstanceSegmentation = True, 
+def create_controller(agentMode = "default", 
+                      visibilityDistance = 1.5,
+                      scene = "FloorPlan1", 
+                      gridSize = 0.1, 
+                      snapToGrid = False,
+                      rotationStepDegrees = 1,
+                      renderDepthImage = True, 
+                      renderInstanceSegmentation = True, 
                       width = 1280, height = 720, fieldOfView = 90):
     """Return a controller object with the specified parameters"""
     return Controller(
@@ -55,6 +60,7 @@ def print_object_info(object : dict[str, str], *args : str):
             print(f"{k} : {v}")
         elif k in args:
             print(f"{k} : {v}")
+    print()
 
 def is_sublist( list_a : list, list_b : list):
     """Checks if list_b is a list contained in list_a
@@ -379,7 +385,15 @@ def get_object_parent_receptacles(object : dict):
     return object['parentReceptacles']
 
 def get_object_parent_receptacles_type(controller : Controller, object : dict):
-    return get_object_type(get_object_by_id(controller, get_object_parent_receptacles(object)[0]))
+    parent_receptacle = get_object_parent_receptacles(object)
+
+    if parent_receptacle:
+        parent_receptacle = parent_receptacle[0]
+
+        if parent_receptacle:
+            return get_object_type(get_object_by_id(controller, parent_receptacle))
+
+    return None
 
 def is_object_interactable(object : dict):
     return object['visible'] and object['isInteractable']
@@ -400,6 +414,12 @@ def get_inherited_objects(controller : Controller, primary_object : dict[str, st
 
     return inh_objs if inh_objs else None
 
+def get_inherited_parent_object(controller : Controller, inherited_object : dict[str, str]):
+    if len(get_object_id(inherited_object).split("|")) < 5:
+        return None
+
+    return get_object_by_id(controller, get_object_id(inherited_object).rsplit("|", 1)[0])
+
 def get_agent_inventory(controller : Controller):
     return controller.last_event.metadata['inventoryObjects']
 
@@ -419,6 +439,38 @@ def get_agent_holded_object(controller : Controller):
 def get_liquid_inside(object : dict[str, str]) -> str:
     return object['fillLiquid']
 
+def is_object_in_receptacle(controller : Controller, object : dict[str, str], receptacle : dict[str, str]) -> bool:
+    receptacles = get_object_by_id(controller, get_object_id(object))['parentReceptacles']
+
+    if receptacles:
+        return get_object_id(receptacle) in receptacles
+
+    return False
+
+def is_right_receptacle(controller : Controller, inventory_object : dict[str, str], receptacle :  dict[str, str]) -> bool:
+    if is_object_in_receptacle(controller, inventory_object, receptacle):
+        controller.step(action = "Done")
+        return True
+    else:
+        return False
+
+def right_receptacle_or_pickup(controller : Controller, inventory_object : dict[str, str], receptacle : dict[str, str]) -> bool:
+    if last_action_state(controller):
+        if is_right_receptacle(controller, inventory_object, receptacle):
+            return True
+        else: #Pickup again the object if the receptacle is not right
+            resilient_execution(controller,
+                action = "PickupObject",
+                objectId = get_object_id(inventory_object),
+                forceAction = True
+            )
+
+    return False
+
+def get_object_position(controller : Controller, object : dict[str, str]):
+    object = get_object_by_id(controller, get_object_id(object))
+
+    return object['position']['x'], object['position']['y'], object['position']['z']
 # === TASK EXECUTION ===
 
 def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None) -> tuple[bool, list[str]]:
@@ -436,7 +488,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         action = task.get_action_from_cmd( step )
 
         if not task.is_action(action):
-            raise ex.BadActionFormat("Action not recognized by the agent")
+            raise ex.BadActionFormat(f"Action '{action}' was not recognized by the agent")
 
         target_id = task.get_subjects_from_cmd( step )
 
@@ -456,7 +508,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
                 obj = get_object_by_id(controller, target_id)
 
                 if not obj:
-                    raise ex.BadActionFormat(f"The target of '{action.capitalize()}' was not found")
+                    raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
 
                 print(f"-> {action} {get_object_type(obj)}")
 
@@ -469,7 +521,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
                 liquid = target_id[1].lower()
 
                 if not obj:
-                    raise ex.BadActionFormat(f"The target of '{action.capitalize()}' was not found")
+                    raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
 
                 if not liquid:
                     raise ex.BadActionFormat(f"To perform '{action}' a valid liquid must be specified")
@@ -671,65 +723,155 @@ def pick_up_object(controller: Controller, object : dict):
         forceAction = False
     )
 
-def put_object(controller: Controller, receptacle: dict):
+def put_object(controller: Controller, receptacle: dict[str, str], excluded_receptacle_ids : set[str] = {}):
 
-    inventory_object = get_agent_holded_object(controller)
+    if get_object_id(receptacle) in excluded_receptacle_ids:
+        return
+
+    inventory_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
 
     controller.step(
         action="PutObject", 
         objectId=get_object_id(receptacle),
-        forceAction=False
+        forceAction=False,
+        placeStationary = False
     )
 
-    if not last_action_state(controller):
+    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        return
 
-        # Try to put the object over the receptacle
-        controller.step(
-            action="GetSpawnCoordinatesAboveReceptacle",
-            objectId=get_object_id(receptacle),
-            anywhere=False
-        )
+    # Try to put the object over the receptacle centroid if the default action has not been executed successfully
+    controller.step(
+        action="GetSpawnCoordinatesAboveReceptacle",
+        objectId=get_object_id(receptacle),
+        anywhere=True
+    )
 
-        position_above = controller.last_event.metadata['actionReturn']
+    position_above = controller.last_event.metadata['actionReturn']
+
+    # Trying the centroid above the receptacle
+    if position_above:
+        centroid = {
+            "x": sum([tmp['x'] for tmp in position_above])/len(position_above),
+            "y": sum([tmp['y'] for tmp in position_above])/len(position_above),
+            "z": sum([tmp['z'] for tmp in position_above])/len(position_above)
+        }
 
         controller.step(
             action="PlaceObjectAtPoint",
             objectId=get_object_id(inventory_object),
-            position = {
-                "x": sum([tmp['x'] for tmp in position_above])/len(position_above),
-                "y": sum([tmp['y'] for tmp in position_above])/len(position_above),
-                "z": sum([tmp['z'] for tmp in position_above])/len(position_above)
-            }
+            position = centroid
         )
 
-        if last_action_state(controller):
-            if get_object_id(receptacle) in get_object_by_id(controller, get_object_id(inventory_object))['parentReceptacles']:
-                controller.step(action = "Done")
+        if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+            return
+
+        #Try all the position above the receptacle
+        for pos in position_above:
+            controller.step(
+                action="PlaceObjectAtPoint",
+                objectId=get_object_id(inventory_object),
+                position = pos
+            )
+
+            if right_receptacle_or_pickup(controller, inventory_object, receptacle):
                 return
 
-        # Receptacle is full, so another one is searched in the environment
-        
-        recepts = get_objects_in_scene(controller, receptacle = True, objectType = receptacle['objectType'])
 
+    # If the object is an inherited one, try to put the object in the parent
+    parent_receptacle = get_inherited_parent_object(controller, receptacle)
+
+    if parent_receptacle:
+        try:
+            put_object(controller, parent_receptacle, excluded_receptacle_ids.add(get_object_id(receptacle)))
+
+            if right_receptacle_or_pickup(controller, inventory_object, parent_receptacle):
+                return
+        except:
+            pass
+        finally:
+            excluded_receptacle_ids.add(get_object_id(parent_receptacle))
+
+    # If the object as an inherited object, try to put the object in the inherited
+    inherited_receptacle = get_inherited_objects(controller, receptacle)
+
+    if inherited_receptacle:
+        try:
+            put_object(controller, inherited_receptacle, excluded_receptacle_ids.add(get_object_id(receptacle)))
+
+            if right_receptacle_or_pickup(controller, inventory_object, inherited_receptacle):
+                return
+        except:
+            pass
+        finally:
+            excluded_receptacle_ids.add(get_object_id(parent_receptacle))
+
+    # Try to put the object in the center of the receptacle considering axisAlignedBoundingBox
+    controller.step(
+        action = "PlaceObjectAtPoint",
+        objectId=get_object_id(inventory_object),
+        position = receptacle['axisAlignedBoundingBox']['center']
+    )
+
+    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        return
+
+    # Try to put the object at one of the receptacle corner points
+    for corner_point in receptacle['axisAlignedBoundingBox']['cornerPoints']:
+        controller.step(
+                action = "PlaceObjectAtPoint",
+                objectId=get_object_id(inventory_object),
+                position = {
+                    'x' : corner_point[0],
+                    'y' : corner_point[1],
+                    'z' : corner_point[2]
+                }
+            )
+
+        if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+            return
+
+    # Receptacle is full, so another one of the same type is searched in the environment and the object is placed inside it (if possible)
+    recepts = get_objects_in_scene(controller, receptacle = True, objectType = receptacle['objectType'])
+
+    if recepts and len(recepts) > 1:
         for rec in recepts:
             if get_object_id(rec) != get_object_id(receptacle):
                 reach_object(controller, rec)
 
-                controller.step(
-                    action="PutObject",
-                    objectId=get_object_id(rec),
-                    forceAction=False
-                )
+                try:
+                    put_object(controller, rec)
 
-                if not last_action_state(controller):
-                    continue
-                else:
-                    controller.step(action = "Done")
-                    break
-        else:
-            raise ex.ReceptacleException(f"No {get_object_type(receptacle)} can hold the object in hand")
-    else:
-        controller.step(action = "Done")
+                    if right_receptacle_or_pickup(controller, inventory_object, rec):
+                        return
+                except:
+                    pass
+    
+
+    # If all the other ways failed, trying to put the object inside by scanning all the position_aboce the receptacles
+    if position_above:
+        for pos in position_above:
+            controller.step(
+                action="PlaceObjectAtPoint",
+                objectId=get_object_id(inventory_object),
+                position=pos
+            )
+
+            if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+                return
+
+    # Force to put the object in the target receptacle
+    controller.step(
+        action="PutObject", 
+        objectId=get_object_id(receptacle),
+        forceAction=True,
+        placeStationary = False
+    )
+    
+    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        return
+
+    raise ex.ReceptacleException(f"The object is not in {get_object_type(receptacle).lower()} due to simulation error")
 
 def drop_object(controller: Controller):
 
