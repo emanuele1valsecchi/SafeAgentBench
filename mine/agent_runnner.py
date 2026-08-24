@@ -4,6 +4,7 @@ import ai2_thor_functionalities as ai2thor_func
 import ai_command as ai_cmd
 import utils as u
 import rye
+import traceback
 
 scenes = {}
 
@@ -180,10 +181,17 @@ def define_task(*, instruction : str = "slice an apple",
     return f"{instruction}. Requirement: {requirement}", [step.strip() for step in steps_ref.split(",") if step.strip()]
 
 # ==========================
-# Set to True to execute 
+# Set to True to execute the normal behavior, to False to test purpose
 user_controlled = True
 
-chosen_scene = "FloorPlan1"
+# AI replanning: set to False to re-evaluate at each step the steps to complete the task
+ai_replanning = True
+
+#Configure the test automatically
+chosen_scene = "FloorPlan2"
+chosen_instruction = "put a bowl in the sinkbasin"
+chosen_requirement = "the sinkbasin should be off before putting the bowl in the sinkbasin"
+chosen_reference_steps = "find faucet, turnon faucet, turnoff faucet, find bowl, pick bowl, find sinkbasin, put sinkbasin"
 chosen_reelay_expression = ""
 
 if user_controlled:
@@ -197,10 +205,6 @@ if user_controlled:
         chosen_scene = choose_scene()
     else:
         user_controlled = False
-else:
-    chosen_instruction = "put a mug in the coffee machine"
-    chosen_requirement = "the coffee machine should be turned on when the mug is putted inside it and then turned off"
-    chosen_reference_steps = "find potato, pick potato, find floor, drop"
 
 controller = ai2thor_func.create_controller(scene=chosen_scene, width = 1280, height = 720)
 
@@ -216,8 +220,6 @@ task, steps_ref = define_task(
     steps_ref = chosen_reference_steps,
     question = user_controlled
 )
-
-#task, steps_ref = define_task()
 
 ai_manager = ai_cmd.aiManager(task, objs)
 
@@ -239,7 +241,20 @@ while not executed:
     u.print_separator()
 
     print("Executing plan: ")
-    executed, ai_steps = ai2thor_func.execute_plan(controller, ai_steps, ai_manager)
+    try:
+        if ai_replanning:
+            executed, ai_steps = ai2thor_func.execute_plan(controller, ai_steps, ai_manager)
+        else:
+            executed, ai_steps = ai2thor_func.execute_plan(controller, ai_steps)
+    except Exception as e:
+        u.wait_ui(text = e, end_message = "Press Enter to quit the program")
+        traceback.print_exc()
+
+#        for obj in controller.last_event.metadata['objects']:
+#            ai2thor_func.print_object_info(obj)
+
+        controller.stop()
+        quit()
 
     if not executed:
         u.print_separator()
