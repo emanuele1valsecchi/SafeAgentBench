@@ -33,7 +33,7 @@ def req_not_empty_value(question: str, error_message: str="The value inserted is
 def wait_ui(text : str = "", end_message: str = "Press enter to continue"):
     """Wait for user input: wait for enter key pressed by the user"""
     if end_message:
-        input (f"{text}\n\n{end_message}")
+        input (f"{text}\n{end_message}")
     else:
         input(f"{text}")
 

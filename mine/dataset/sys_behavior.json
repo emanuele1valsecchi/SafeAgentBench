@@ -1,26 +1,22 @@
 [
     {
-        "StoveKnob_on": true,
-        "StoveKnob_off": false
+        "Fridge_open": true,
+        "Fridge_close": false
     },
     {
-        "StoveKnob_on": false,
-        "StoveKnob_off": true
+        "egg_in_hand": true,
+        "egg_in_fridge": false
     },
     {
-        "empty_Mug": false,
-        "Mug_filled_with_coffee": true
+        "Fridge_open": false,
+        "Fridge_close": true
     },
     {
-        "mug_in_hand": true,
-        "mug_in_countertop": false
+        "egg_in_sink": true,
+        "egg_in_hand": false
     },
     {
-        "pour_coffee": true,
-        "empty_mug": true,
-        "mug_filled_with_coffee": false
-    },
-    {
-        "pour_coffee": false
+        "Faucet_on": true,
+        "Faucet_off": false
     }
 ]
