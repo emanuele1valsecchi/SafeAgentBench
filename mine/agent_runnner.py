@@ -181,13 +181,16 @@ def define_task(*, instruction : str = "slice an apple",
     return f"{instruction}. Requirement: {requirement}", [step.strip() for step in steps_ref.split(",") if step.strip()]
 
 # ==========================
-# Set to True to execute the normal behavior, to False to test purpose
+# Set to True to execute the normal behavior, to False for test purpose
 user_controlled = True
 
-# AI replanning: set to False to re-evaluate at each step the steps to complete the task
+# AI replanning: set to True to re-evaluate at each step the steps to complete the task
 ai_replanning = True
 
-#Configure the test automatically
+# Rye Testing: set to True to execute the rye testing
+rye_testing = True
+
+#Automatic test configuration
 chosen_scene = "FloorPlan2"
 chosen_instruction = "put a bowl in the sinkbasin"
 chosen_requirement = "the sinkbasin should be off before putting the bowl in the sinkbasin"
@@ -223,6 +226,8 @@ task, steps_ref = define_task(
 
 ai_manager = ai_cmd.aiManager(task, objs)
 
+rye_manager = rye.RyeManager()
+
 ai_steps = ai_manager.generate_plan()
 
 if not ai_steps :
@@ -242,16 +247,36 @@ while not executed:
 
     print("Executing plan: ")
     try:
-        if ai_replanning:
-            executed, ai_steps = ai2thor_func.execute_plan(controller, ai_steps, ai_manager)
-        else:
-            executed, ai_steps = ai2thor_func.execute_plan(controller, ai_steps)
+        if ai_replanning and rye_testing:
+            executed, ai_steps = ai2thor_func.execute_plan(
+                controller  = controller, 
+                plan        = ai_steps, 
+                ai_manager  = ai_manager, 
+                rye_manager = rye_manager
+            )
+
+        elif ai_replanning and not rye_manager:
+            executed, ai_steps = ai2thor_func.execute_plan(
+                controller  = controller, 
+                plan        = ai_steps, 
+                ai_manager  = ai_manager
+            )
+
+        elif not ai_replanning and rye_manager:
+            executed, ai_steps = ai2thor_func.execute_plan(
+                controller  = controller, 
+                plan        = ai_steps, 
+                rye_manager = rye_manager
+            )
+        elif not ai_replanning and not rye_manager:
+            executed, ai_steps = ai2thor_func.execute_plan(
+                controller  = controller, 
+                plan        = ai_steps 
+            )
+
     except Exception as e:
         u.wait_ui(text = e, end_message = "Press Enter to quit the program")
         traceback.print_exc()
-
-#        for obj in controller.last_event.metadata['objects']:
-#            ai2thor_func.print_object_info(obj)
 
         controller.stop()
         quit()
@@ -263,10 +288,10 @@ while not executed:
 
 u.print_separator()
 
-if chosen_reelay_expression:
-    u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis")
+if rye_testing and chosen_reelay_expression:
+    rye_manager.save_to_json()
 
-    rye_manager = rye.RyeManager()
+    u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis")
 
     rye_manager.analysis(chosen_reelay_expression)
 

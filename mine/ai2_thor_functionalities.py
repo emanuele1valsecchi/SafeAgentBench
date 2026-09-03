@@ -457,6 +457,9 @@ def is_right_receptacle(controller : Controller, inventory_object : dict[str, st
 def right_receptacle_or_pickup(controller : Controller, inventory_object : dict[str, str], receptacle : dict[str, str]) -> bool:
     if last_action_state(controller):
         if is_right_receptacle(controller, inventory_object, receptacle):
+            controller.step(
+                action = "Done"
+            )
             return True
         else: #Pickup again the object if the receptacle is not right
             resilient_execution(controller,
@@ -473,15 +476,13 @@ def get_object_position(controller : Controller, object : dict[str, str]):
     return object['position']['x'], object['position']['y'], object['position']['z']
 # === TASK EXECUTION ===
 
-def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None) -> tuple[bool, list[str]]:
+def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None, rye_manager : rye.RyeManager = None) -> tuple[bool, list[str]]:
     """Execute the plan in the Ai2Thor environment
     
     Args:
         controller: the Ai2Thor controller
         plan: list of instructione that the embodied has to execute
     """
-
-    rye_manager = rye.RyeManager()
     
     for i, step in enumerate(plan):
 
@@ -536,99 +537,122 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
 
             case task.PICK:
                 pick_up_object(controller, obj)
-                rye_manager.encode_pick(get_object_type(obj).lower(), get_object_parent_receptacles_type(controller, obj).lower())
+                if rye_manager : 
+                    rye_manager.encode_pick(get_object_type(obj).lower(), get_object_parent_receptacles_type(controller, obj).lower())
 
             case task.PUT:
                 holded_object_type = get_object_type(get_agent_holded_object(controller))
                 put_object(controller, obj)
-                rye_manager.encode_put(holded_object_type.lower(), get_object_type(obj).lower())
+                if rye_manager : 
+                    rye_manager.encode_put(holded_object_type.lower(), get_object_type(obj).lower())
 
             case task.DROP:
                 held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 drop_object(controller)
-                rye_manager.encode_drop(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
+                if rye_manager : 
+                    rye_manager.encode_drop(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
 
             case task.THROW:
                 held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 throw_object(controller)
-                rye_manager.encode_throw(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
+                if rye_manager : 
+                    rye_manager.encode_throw(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
 
             case task.MOVEHELDBACK:
                 move_held_object_back(controller)
-                rye_manager.encode_moveheldback()
+                if rye_manager : 
+                    rye_manager.encode_moveheldback()
 
             case task.MOVEHELDLEFT:
                 move_held_object_left(controller)
-                rye_manager.encode_moveheldleft()
+                if rye_manager : 
+                    rye_manager.encode_moveheldleft()
 
             case task.MOVEHELDRIGHT:
                 move_held_object_right(controller)
-                rye_manager.encode_moveheldright()
+                if rye_manager : 
+                    rye_manager.encode_moveheldright()
 
             case task.MOVEHELDUP:
                 move_held_object_up(controller)
-                rye_manager.encode_moveheldup()
+                if rye_manager : 
+                    rye_manager.encode_moveheldup()
 
             case task.MOVEHELDDOWN:
                 move_held_object_down(controller)
-                rye_manager.encode_moveheldown()
+                if rye_manager : 
+                    rye_manager.encode_moveheldown()
 
             case task.POUR:
                 held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 rotate_held_object(controller)
-                rye_manager.encode_pour(get_object_type(held_object).lower(), get_liquid_inside(held_object).lower())
+                if rye_manager : 
+                    rye_manager.encode_pour(get_object_type(held_object).lower(), get_liquid_inside(held_object).lower())
 
             case task.PUSH:
                 directional_push_object(controller, obj)
-                rye_manager.encode_push(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_push(get_object_type(obj))
 
             case task.PULL:
                 direction_pull_object(controller, obj)
-                rye_manager.encode_pull(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_pull(get_object_type(obj))
 
             case task.OPEN:
                 open_object(controller, obj)
-                rye_manager.encode_open(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_open(get_object_type(obj))
 
             case task.CLOSE:
                 close_object(controller, obj)
-                rye_manager.encode_close(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_close(get_object_type(obj))
 
             case task.BREAK:
                 break_object(controller, obj)
-                rye_manager.encode_break(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_break(get_object_type(obj))
 
             case task.COOK:
                 cook_object(controller, obj)
-                rye_manager.encode_cook(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_cook(get_object_type(obj))
 
             case task.SLICE:
                 slice_object(controller, obj)
-                rye_manager.encode_slice(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_slice(get_object_type(obj))
 
             case task.TURNON:
                 toggle_object_on(controller, obj)
-                rye_manager.encode_turnon(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_turnon(get_object_type(obj))
 
             case task.TURNOFF:
                 toggle_object_off(controller, obj)
-                rye_manager.encode_turnoff(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_turnoff(get_object_type(obj))
 
             case task.DIRTY:
                 dirty_object(controller, obj)
-                rye_manager.encode_dirty(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_dirty(get_object_type(obj))
 
             case task.CLEAN:
                 clean_object(controller, obj)
-                rye_manager.encode_clean(get_object_type(obj))
+                if rye_manager : 
+                    rye_manager.encode_clean(get_object_type(obj))
 
             case task.FILLLIQUID:
                 fill_object_with_liquid(controller, obj, liquid)
-                rye_manager.encode_fillliquid(get_object_type(obj), liquid)
+                if rye_manager : 
+                    rye_manager.encode_fillliquid(get_object_type(obj), liquid)
 
             case task.EMPTYLIQUID:
                 empty_object_from_liquid(controller, obj)
-                rye_manager.encode_emptyliquid(get_object_type(obj), get_liquid_inside(obj))
+                if rye_manager : 
+                    rye_manager.encode_emptyliquid(get_object_type(obj), get_liquid_inside(obj))
 
             case _:
                 raise ex.BadActionFormat(f"Action '{action}' not allowed")
@@ -639,9 +663,8 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
             if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
                 return False, new_plan
         
-        time.sleep(SLEEP_BETWEEN_STEPS)
+        #time.sleep(SLEEP_BETWEEN_STEPS)
 
-    rye_manager.save_to_json()
     return True, None
 
 def resilient_execution(controller : Controller, **kwargs):
@@ -723,7 +746,10 @@ def pick_up_object(controller: Controller, object : dict):
         forceAction = False
     )
 
-def put_object(controller: Controller, receptacle: dict[str, str], excluded_receptacle_ids : set[str] = {}):
+def put_object(controller: Controller, receptacle: dict[str, str], excluded_receptacle_ids : set[str] = None):
+
+    if not excluded_receptacle_ids:
+        excluded_receptacle_ids = set()
 
     if get_object_id(receptacle) in excluded_receptacle_ids:
         return
@@ -737,6 +763,37 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
         placeStationary = False
     )
 
+    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        return
+
+    controller.step(
+        action="PutObject", 
+        objectId=get_object_id(receptacle),
+        forceAction=False,
+        placeStationary = True
+    )
+
+    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        return
+
+    # Force to put the object in the target receptacle
+    controller.step(
+        action="PutObject", 
+        objectId=get_object_id(receptacle),
+        forceAction=True,
+        placeStationary = False
+    )
+    
+    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        return
+
+    controller.step(
+        action="PutObject", 
+        objectId=get_object_id(receptacle),
+        forceAction=True,
+        placeStationary = True
+    )
+    
     if right_receptacle_or_pickup(controller, inventory_object, receptacle):
         return
 
@@ -783,7 +840,9 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
 
     if parent_receptacle:
         try:
-            put_object(controller, parent_receptacle, excluded_receptacle_ids.add(get_object_id(receptacle)))
+            excluded_receptacle_ids.add(get_object_id(receptacle))
+
+            put_object(controller, parent_receptacle, excluded_receptacle_ids)
 
             if right_receptacle_or_pickup(controller, inventory_object, parent_receptacle):
                 return
@@ -797,7 +856,9 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
 
     if inherited_receptacle:
         try:
-            put_object(controller, inherited_receptacle, excluded_receptacle_ids.add(get_object_id(receptacle)))
+            excluded_receptacle_ids.add(get_object_id(receptacle))
+
+            put_object(controller, inherited_receptacle, excluded_receptacle_ids)
 
             if right_receptacle_or_pickup(controller, inventory_object, inherited_receptacle):
                 return
@@ -859,17 +920,6 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
 
             if right_receptacle_or_pickup(controller, inventory_object, receptacle):
                 return
-
-    # Force to put the object in the target receptacle
-    controller.step(
-        action="PutObject", 
-        objectId=get_object_id(receptacle),
-        forceAction=True,
-        placeStationary = False
-    )
-    
-    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
-        return
 
     raise ex.ReceptacleException(f"The object is not in {get_object_type(receptacle).lower()} due to simulation error")
 

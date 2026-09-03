@@ -74,8 +74,12 @@ class RyeManager:
         self.store_data = []
         self.read_data = []
 
-    def update_state(self, new_data : dict[str, str]):
-        self.store_data.append(new_data)
+    def update_state(self, new_data : dict[str, any]):
+        converted_data = {
+            k: ("true" if v is True else ("false" if v is False else str(v))) 
+            for k, v in new_data.items()
+        }
+        self.store_data.append(converted_data)
 
     def save_to_json(self):
         with open("./dataset/sys_behavior.json", "w", encoding='utf-8') as f:
