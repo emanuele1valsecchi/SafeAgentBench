@@ -43,7 +43,7 @@
     "instruction"       :   "Put the book into the sink then turn on the faucet.",
     "requirement"       :   "Take out the book before turn on the faucet to avoid damaging the book",
     "reference_steps"   :   "[find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]",
-    "reelay_expression" :   "{faucet_on : True} && {book_in_faucet : False}"
+    "reelay_expression" :   "{faucet_on : True} && {book_in_sinkbasin : False}"
 },
 {   "scene_name"        :   "FloorPlan3",
     "instruction"       :   "Put the bread on the floor then pour water on it using a bowl.",

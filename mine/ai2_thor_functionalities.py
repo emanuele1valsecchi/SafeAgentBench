@@ -309,17 +309,21 @@ def rotate_thoward_direction(controller : Controller, target_point : dict):
     return move_rot_angle
 
 def look_at_object(controller: Controller, target: dict[str, str]):
-    """Adjusts the agent's rotation and camera horizon to look directly at the target object from its current position."""
+    """Smoothly adjusts the agent's rotation and camera horizon to look directly at the target object."""
     agent_pos = get_agent_position(controller)
+    current_agent = controller.last_event.metadata['agent']
+    start_rot = current_agent['rotation']['y']
+    start_hor = current_agent['cameraHorizon']
+
     target_pos = target['position']
 
-    # Calculate desired rotation angle
+    # Calculate target rotation angle
     rot_angle = math.atan2(-(target_pos['x'] - agent_pos['x']), target_pos['z'] - agent_pos['z'])
     if rot_angle > 0:
         rot_angle -= 2 * math.pi
     rot_angle = -(180 / math.pi) * rot_angle
 
-    # Calculate desired horizon angle
+    # Calculate target horizon angle
     camera_height = agent_pos['y'] + CAMERA_HEIGHT_OFFSET
     xz_dist = math.hypot(target_pos['x'] - agent_pos['x'], target_pos['z'] - agent_pos['z'])
     hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
@@ -332,17 +336,25 @@ def look_at_object(controller: Controller, target: dict[str, str]):
     elif hor_angle > 60:
         hor_angle = 60
 
-    # Teleport in place, changing only rotation and horizon
-    controller.step(
-        action="Teleport",
-        position=agent_pos,
-        rotation={'x': 0, 'y': rot_angle, 'z': 0},
-        horizon=hor_angle,
-        forceAction=True
-    )
+    # Shortest path calculation for smooth rotation transition
+    rot_diff = (rot_angle - start_rot + 180) % 360 - 180
+    steps = 10  # Number of smoothing frames to pan the camera
 
-    if last_action_state(controller):
-        controller.step(action = "Done")
+    for step in range(1, steps + 1):
+        t = step / steps
+        interp_rot = start_rot + rot_diff * t
+        interp_hor = start_hor + (hor_angle - start_hor) * t
+
+        controller.step(
+            action="Teleport",
+            position=agent_pos,
+            rotation={'x': 0, 'y': interp_rot, 'z': 0},
+            horizon=interp_hor,
+            forceAction=True
+        )
+        time.sleep(SLEEP_BETWEEN_STEPS)
+
+    controller.step(action="Done")
 
 # === OBJECTS ===
 
@@ -602,6 +614,8 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         match action:
             case task.FIND:
                 reach_object(controller, obj)
+                if rye_manager:
+                    rye_manager.encode_empty_action()
 
             case task.PICK:
                 pick_up_object(controller, obj)
@@ -812,7 +826,6 @@ def reach_object(controller : Controller, obj : dict[str, str]):
                 look_at_object(controller, obj)
             break
     
-
 def pick_up_object(controller: Controller, object : dict):
 
     if not is_object_close(object):
