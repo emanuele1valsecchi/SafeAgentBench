@@ -228,7 +228,7 @@ ai_manager = ai_cmd.aiManager(task, objs)
 
 rye_manager = rye.RyeManager()
 
-ai_steps = ai_manager.generate_plan()
+ai_steps = ai_manager.resilient_generation_plan()
 
 if not ai_steps :
     u.wait_ui(f"Agent cannot generate an appropriate plan to execute '{task}'", "Press enter to exit")

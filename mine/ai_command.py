@@ -28,6 +28,14 @@ def get_ai2_thor_objects() -> list :
 
     return objs
 
+FALLBACK_MODELS = [
+    "gemini-3.0-pro",                 
+    "gemini-2.5-flash-image-preview", 
+    "gemini-2.5-flash",               
+]
+
+MAX_RETRIES = 5
+
 class aiManager():
 
     system_prompt = "You are a helpful assistant."
@@ -272,17 +280,33 @@ Example:
             safety_settings=safety_settings
         )
 
+        self.models = [model_name, FALLBACK_MODELS]
+
         self.model_name = model_name
 
         self.chat_session = self.client.chats.create(model = self.model_name, config = self.config)
 
-    def generate_plan(self, prompt : str = None, max_retries : int = 5) -> list[str]:
+    def resilient_generation_plan(self, prompt : str = None, max_retries : int = MAX_RETRIES) -> list[str]:
+        for model in self.models:
+            self.model_name = model
+
+            self.chat_session = self.client.chats.create(model = self.model_name, config = self.config)
+
+            generated_plan = self.generate_plan(prompt, max_retries)
+
+            if generated_plan:
+                return generated_plan
+
+        raise Exception("Max retries reached, could not complete the request")
+
+
+    def generate_plan(self, prompt : str = None, max_retries : int = MAX_RETRIES) -> list[str]:
         retries = 0
+        waiting_time = 5
 
         while retries < max_retries:
             try:
-                # Send the prompt into the existing chat history
-
+                # Send prompt into the existing chat history
                 if not prompt:
                     response = self.chat_session.send_message(self.initial_prompt)
                 else:
@@ -310,10 +334,13 @@ Example:
             
             except Exception as e:
                 print(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
-                time.sleep(5)
+                
+                time.sleep(waiting_time)
+
+                waiting_time *= 2
                 retries += 1
 
-        raise Exception("Max retries reached, could not complete the request")
+        return None
 
     def update_plan(self, plan : str, step : int, objects_in_scene : list[dict]) -> list[str]:
         new_prompt = f"""The agent has executed {step} steps, consequentially the data associated with objects and the environment is changed

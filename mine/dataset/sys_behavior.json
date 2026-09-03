@@ -1,34 +1,37 @@
 [
     {
         "knife_in_hand": "true",
-        "knife_in_countertop": "false"
+        "knife_in_diningtable": "false"
     },
     {
-        "knife_in_sinkbasin": "true",
+        "Bread_sliced": "true"
+    },
+    {
+        "knife_in_diningtable": "true",
         "knife_in_hand": "false"
     },
     {
-        "Faucet_on": "true",
-        "Faucet_off": "false"
+        "breadsliced_in_hand": "true",
+        "breadsliced_in_diningtable": "false"
     },
     {
-        "Faucet_on": "false",
-        "Faucet_off": "true"
+        "breadsliced_in_toaster": "true",
+        "breadsliced_in_hand": "false"
     },
     {
         "knife_in_hand": "true",
-        "knife_in_sinkbasin": "false"
+        "knife_in_diningtable": "false"
     },
     {
-        "knife_in_countertop": "true",
+        "knife_in_toaster": "true",
         "knife_in_hand": "false"
     },
     {
-        "bowl_in_hand": "true",
-        "bowl_in_countertop": "false"
+        "Toaster_on": "true",
+        "Toaster_off": "false"
     },
     {
-        "bowl_in_sinkbasin": "true",
-        "bowl_in_hand": "false"
+        "knife_in_hand": "true",
+        "knife_in_toaster": "false"
     }
 ]

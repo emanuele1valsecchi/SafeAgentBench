@@ -14,12 +14,12 @@ import rye
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
 CAMERA_HEIGHT_OFFSET = 0.675
-TARGET_MAX_DISTANCE = 1.0
+TARGET_MAX_DISTANCE = 1.5
 MAX_ATTEMPTS = 20 # NUmber of times an action is repeated before throwing an exception and closing the program
 
 # === CREATION ===
 def create_controller(agentMode = "default", 
-                      visibilityDistance = 1.5,
+                      visibilityDistance = TARGET_MAX_DISTANCE,
                       scene = "FloorPlan1", 
                       gridSize = 0.1, 
                       snapToGrid = False,
@@ -134,18 +134,29 @@ def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, s
     if direction not in {"left", "right"}:
         raise ValueError("direction must be 'left' or 'right'")
 
-    action = "RotateLeft" if direction == "left" else "RotateRight"
-    remaining = abs(total_degrees)
+    agent = controller.last_event.metadata['agent']
+    start_pos = agent['position']
+    start_rot = agent['rotation']['y']
+    start_hor = agent['cameraHorizon']
 
-    while remaining > 0:
-        controller.step( action=action, degrees=step )
+    # Determine target rotation based on direction and degrees
+    multiplier = 1 if direction == "right" else -1
+    target_rot = start_rot + (total_degrees * multiplier)
+    rot_diff = (target_rot - start_rot + 180) % 360 - 180
 
-        if not controller.last_event.metadata.get("lastActionSuccess", False):
-            raise RuntimeError(f"Rotation failed: {controller.last_event.metadata.get('errorMessage')}")
-        remaining -= step
+    steps = max(1, abs(int(rot_diff / step)))
 
-        if remaining > 0:
-            time.sleep(SLEEP_BETWEEN_STEPS)
+    for i in range(1, steps + 1):
+        t = i / steps
+        cur_rot = start_rot + rot_diff * t
+        controller.step(
+            action="Teleport",
+            position=start_pos,
+            rotation={'x': 0, 'y': cur_rot, 'z': 0},
+            horizon=start_hor,
+            forceAction=True
+        )
+        time.sleep(SLEEP_BETWEEN_STEPS)
 
 def rotate_agent_left_smoothly(controller: Controller, total_degrees=90, step=10):
     rotate_agent_smoothly(controller, "left", total_degrees, step)
@@ -275,6 +286,63 @@ def teleport_to_free_position(controller : Controller):
             return
         
     raise ex.Ai2THORException(controller)
+
+def rotate_thoward_direction(controller : Controller, target_point : dict):
+
+    # Evaluating agent current position
+    current_agent = controller.last_event.metadata['agent']
+    start_pos = current_agent['position']
+    start_rot = current_agent['rotation']['y']
+
+    # Calculating new angle rotation based on the new position to reach
+    move_rot_angle = math.atan2(-(target_point['x'] - start_pos['x']), target_point['z'] - start_pos['z'])
+    if move_rot_angle > 0:
+        move_rot_angle -= 2 * math.pi
+    move_rot_angle = -(180 / math.pi) * move_rot_angle
+
+    rot_diff = (move_rot_angle - start_rot + 180) % 360 - 180
+    if rot_diff != 0:
+        direction = "right" if rot_diff > 0 else "left"
+        # Use your existing smooth rotation helper function
+        rotate_agent_smoothly(controller, direction, total_degrees=abs(rot_diff))
+
+    return move_rot_angle
+
+def look_at_object(controller: Controller, target: dict[str, str]):
+    """Adjusts the agent's rotation and camera horizon to look directly at the target object from its current position."""
+    agent_pos = get_agent_position(controller)
+    target_pos = target['position']
+
+    # Calculate desired rotation angle
+    rot_angle = math.atan2(-(target_pos['x'] - agent_pos['x']), target_pos['z'] - agent_pos['z'])
+    if rot_angle > 0:
+        rot_angle -= 2 * math.pi
+    rot_angle = -(180 / math.pi) * rot_angle
+
+    # Calculate desired horizon angle
+    camera_height = agent_pos['y'] + CAMERA_HEIGHT_OFFSET
+    xz_dist = math.hypot(target_pos['x'] - agent_pos['x'], target_pos['z'] - agent_pos['z'])
+    hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
+    hor_angle = (180 / math.pi) * hor_angle
+    hor_angle *= 0.9
+    hor_angle = -hor_angle
+
+    if hor_angle < -30:
+        hor_angle = -30
+    elif hor_angle > 60:
+        hor_angle = 60
+
+    # Teleport in place, changing only rotation and horizon
+    controller.step(
+        action="Teleport",
+        position=agent_pos,
+        rotation={'x': 0, 'y': rot_angle, 'z': 0},
+        horizon=hor_angle,
+        forceAction=True
+    )
+
+    if last_action_state(controller):
+        controller.step(action = "Done")
 
 # === OBJECTS ===
 
@@ -708,11 +776,13 @@ def reach_object(controller : Controller, obj : dict[str, str]):
         path = get_path_to_position(controller, closest_position)
 
         for p in path:
+            move_rot_angle = rotate_thoward_direction(controller, p)
+
             controller.step(
                 action = "TeleportFull",
                 position = p,
-                rotation = {'x': 0, 'y': rotation_angle, 'z': 0},
-                horizon = horizon_angle,
+                rotation = {'x': 0, 'y': move_rot_angle, 'z': 0},
+                horizon = 0.0,
                 standing = True
             )
 
@@ -729,7 +799,19 @@ def reach_object(controller : Controller, obj : dict[str, str]):
             else:
                 controller.step(action = "Done")
         else:
+            controller.step(
+                action = "Teleport",
+                position = closest_position,
+                rotation = {'x': 0, 'y': rotation_angle, 'z': 0},
+                horizon = horizon_angle,
+                standing = True
+            )
+            if last_action_state(controller):
+                controller.step(action = "Done")
+
+                look_at_object(controller, obj)
             break
+    
 
 def pick_up_object(controller: Controller, object : dict):
 
