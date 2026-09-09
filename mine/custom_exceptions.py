@@ -64,3 +64,11 @@ class Ai2THORException(Exception):
 
     def is_collision(self):
         return self.exception == 'InvalidOperationException' and self.message.lower().startswith("collided")
+
+class AIRequestException(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+             
+    def __str__(self):
+        return f"{self.message}"
