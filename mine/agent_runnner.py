@@ -318,9 +318,8 @@ if rye_testing and chosen_reelay_expression:
 
     u.print_separator()
 
-else:
-    u.wait_ui("Simulation complete.", "Press Enter to close the program")
 
-u.wait_ui( end_message = "Press Enter to exit the program")
+
+u.wait_ui(text = "Simulation complete.", end_message = "Press Enter to exit the program")
 
 controller.stop()
