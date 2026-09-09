@@ -31,7 +31,7 @@ EMPTYLIQUID = agent_action[23]
 def get_action_from_cmd( command : str ) -> str:
     return command.strip().split(" ", 1)[0].lower().strip()
 
-def get_subjects_from_cmd( command : str ) -> tuple[str]:
+def get_subjects_from_cmd( command : str ) -> tuple[str, ...]:
     return [subject for subject in command.split()[1:]]
 
 def get_available_liquids():
