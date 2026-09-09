@@ -6,6 +6,7 @@ from google.genai import types
 import time
 import json
 import ai2_thor_task as task
+import custom_exceptions as ex
 
 def get_ai2_thor_objects() -> list :
     """
@@ -28,13 +29,43 @@ def get_ai2_thor_objects() -> list :
 
     return objs
 
+DEFAULT_MODEL = "gemini-3.5-flash"
+
 FALLBACK_MODELS = [
-    "gemini-3.0-pro",                 
-    "gemini-2.5-flash-image-preview", 
-    "gemini-2.5-flash",               
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-live-preview",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite"
 ]
 
+AI_TEMPERATURE = 0.5
+
 MAX_RETRIES = 5
+
+AI_SAFETY_SETTINGS = [
+    types.SafetySetting(
+        category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+    ),
+    types.SafetySetting(
+        category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+    ),
+    types.SafetySetting(
+        category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+    ),
+    types.SafetySetting(
+        category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+    ),
+]
+
+API_KEY = os.environ.get("GEMINI_API_KEY")
+
+
 
 class aiManager():
 
@@ -228,9 +259,13 @@ Example:
     - Incorrectly Formatted Plan: ['find faucet', 'turn on faucet', 'close faucet', 'finding toiletpaper', 'pick toiletpaper', 'find garbagecan', 'put garbagecan']
 """
 
-    def __init__(self, task : str, environment_objects: str ="", model_name : str = "gemini-3.5-flash", temperature : float = 0.5):
-        api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = genai.Client(api_key=api_key)
+    def __init__(self, *,
+                 reference_steps : str = "",
+                 task : str, 
+                 environment_objects: str ="", 
+                 model_name : str = DEFAULT_MODEL, 
+                 temperature : float = AI_TEMPERATURE):
+        self.client = genai.Client(api_key=API_KEY)
 
         self.initial_prompt = f"""Generate a step-by-step plan to complete the following task: '{task}' 
         You MUST strictly use only these allowed actions: {self.action_explanation}
@@ -255,36 +290,26 @@ Example:
         
         self.initial_prompt += self.output_format
 
-        safety_settings = [
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-        ]
-
         self.config = types.GenerateContentConfig(
             system_instruction=self.system_prompt,
             temperature=temperature,
-            safety_settings=safety_settings
+            safety_settings=AI_SAFETY_SETTINGS
         )
 
-        self.models = [model_name, FALLBACK_MODELS]
+        self.models = [model_name] + [m for m in FALLBACK_MODELS if m != model_name]
 
         self.model_name = model_name
 
         self.chat_session = self.client.chats.create(model = self.model_name, config = self.config)
+
+        self.aiEvaluator = aiEvaluator(
+            task = task,
+            allowed_actions= self.action_explanation,
+            steps_rule= self.rules,
+            reference_steps= reference_steps,
+            ai_model = model_name,
+            temperature = temperature,
+        )
 
     def resilient_generation_plan(self, prompt : str = None, max_retries : int = MAX_RETRIES) -> list[str]:
         for model in self.models:
@@ -298,7 +323,6 @@ Example:
                 return generated_plan
 
         raise Exception("Max retries reached, could not complete the request")
-
 
     def generate_plan(self, prompt : str = None, max_retries : int = MAX_RETRIES) -> list[str]:
         retries = 0
@@ -353,3 +377,84 @@ otherwise create a new plan if the objects in scene don't allow to fulfill the t
         self.chat_session = self.client.chats.create(model = self.model_name, config = self.config, history = self.chat_session.get_history()[:2])
 
         return self.generate_plan(new_prompt)
+
+    def update_performed_sctions(self, action : str):
+        self.aiEvaluator.add_step(action)
+
+    def evaluate_executed_plan(self, environment_objects : list[dict]):
+        return self.aiEvaluator.evaluate_plan(environment_objects)
+
+class aiEvaluator():
+    system_prompt = "You are an impartial judge"
+
+    instrcution = f""""""
+
+    def __init__(self, *, 
+                 task : str, 
+                 allowed_actions : str, 
+                 steps_rule : str, 
+                 reference_steps : list[str],
+                 ai_model : str = DEFAULT_MODEL,
+                 temperature : float = AI_TEMPERATURE,
+                 max_retries : int = MAX_RETRIES):
+        self.performed_steps = []
+        self.task = task
+        self.allowed_actions = allowed_actions
+        self.steps_rule = steps_rule
+        self.reference_steps = reference_steps
+        self.models = [ai_model] + [m for m in FALLBACK_MODELS if m != ai_model]
+        self.temperature = temperature
+        self.max_retries = max_retries
+
+    def add_step(self, step : str):
+        self.performed_steps.append(step)
+
+    def evaluate_plan(self, environment_objects : list[dict]):
+        prompt = f"""You have to evaluate the quality of the planning results \
+provided by an AI robot for the following task: {self.task}.\n
+Assess whether the planning results are capable of completing the task and whether each step can be executed successfully considering \
+that all the objects in the scene are characterized by the following state: {environment_objects} 
+For each step's deasibility consider that the robot can only execute the following actions:  {self.allowed_actions}
+The plan was realized considering that the following rules have to be respected: {self.steps_rule}
+The reference planning steps to perform the task are {self.reference_steps}
+The AI robot generated plan is: {self.performed_steps}
+Your evaluation has to compare the robot's steps with the reference steps, the two can be different,\
+but the task and requirement should be respected in both cases.
+Remain as objective as possible.
+The evaluation should NOT contain any type of explanation, instead it has to assign a rating to the planning results 
+from 'success' or 'fail', strictly following this format: 'Rating: rating'"""
+        
+        response, retries = self.call_gemini_with_retry(prompt)
+        response = response.text.split()[-1].strip().lower()
+
+        if response == "success" or response == "fail":
+            return response, retries
+
+        raise ex.AIRequestException(f"{response}")
+
+
+    def call_gemini_with_retry(self, prompt : str):
+        client = genai.Client(api_key=API_KEY)
+        config = types.GenerateContentConfig(
+            system_instruction=self.system_prompt,
+            temperature=self.temperature,
+            safety_settings=AI_SAFETY_SETTINGS
+        )
+
+        for model in self.models:
+            retries = 0
+            while retries < self.max_retries:
+                try:
+                    response = client.models.generate_content(
+                        model=model,
+                        contents=prompt,
+                        config=config
+                    )
+                    return response, retries
+                except Exception as e:
+                    print(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
+                    time.sleep(5)
+                    retries += 1
+
+        raise Exception("Max retries reached, could not complete the request")
+
