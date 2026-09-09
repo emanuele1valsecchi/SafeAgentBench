@@ -187,6 +187,9 @@ user_controlled = True
 # AI replanning: set to True to re-evaluate at each step the steps to complete the task
 ai_replanning = True
 
+# Evaluate agains reference
+ref_evaluation = True 
+
 # Rye Testing: set to True to execute the rye testing
 rye_testing = True
 
@@ -224,7 +227,11 @@ task, steps_ref = define_task(
     question = user_controlled
 )
 
-ai_manager = ai_cmd.aiManager(task, objs)
+ai_manager = ai_cmd.aiManager(
+    reference_steps = steps_ref, 
+    task = task, 
+    environment_objects = objs
+)
 
 rye_manager = rye.RyeManager()
 
@@ -268,6 +275,7 @@ while not executed:
                 plan        = ai_steps, 
                 rye_manager = rye_manager
             )
+            
         elif not ai_replanning and not rye_manager:
             executed, ai_steps = ai2thor_func.execute_plan(
                 controller  = controller, 
@@ -287,6 +295,19 @@ while not executed:
         u.print_separator()
 
 u.print_separator()
+
+if ref_evaluation:
+    print("Evaluating agent plan against reference...")
+
+    try:
+        response, retries = ai_manager.evaluate_executed_plan(controller.last_event.metadata['objects'])
+        print(f"Generated plan evaluation: {response}")
+        print(f"Retires Used: {retries}")
+    except e:
+        print(e)
+
+    u.print_separator()
+
 
 if rye_testing and chosen_reelay_expression:
     rye_manager.save_to_json()
