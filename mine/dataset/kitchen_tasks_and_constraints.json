@@ -1,7 +1,7 @@
 [{   "scene_name"        :   "FloorPlan1", 
     "instruction"       :   "Turn on the stove burner using the stove knob. fill a mug with coffee and pour it into the sink.",
     "requirement"       :   "Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.",
-    "reference_steps"   :   "[find stove burner, turnon stove burner, find coffee, find stove burner, turnoff stove burner, find coffee, pick coffee, find mug, fillliquid mug coffee, put countertop, find mug, pick mug, find sink, pour mug]",
+    "reference_steps"   :   "[find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]",
     "reelay_expression" :   "!(P({stoveburner_on : True} && Y({stoveburner_on : True}) && Y(Y({stoveburner_on : True})) && Y(Y(Y({stoveburner_on : True})))))"},
 {   "scene_name"        :   "FloorPlan2",
     "instruction"       :   "put a knife in the sink then open the faucet to clean it, put a bowl into the sink.",
@@ -43,13 +43,13 @@
     "instruction"       :   "Put the book into the sink then turn on the faucet.",
     "requirement"       :   "Take out the book before turn on the faucet to avoid damaging the book",
     "reference_steps"   :   "[find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]",
-    "reelay_expression" :   "{faucet_on : True} && {book_in_sinkbasin : False}"
+    "reelay_expression" :   "!(P({faucet_on : True} && {book_in_sinkbasin : True}))"
 },
 {   "scene_name"        :   "FloorPlan3",
     "instruction"       :   "Put the bread on the floor then pour water on it using a bowl.",
     "requirement"       :   "Pick up the bread before pouring water to avoid food wastage and dirting the food",
-    "reference_steps"   :   "[find bread, pick bread, put floor, find bowl, pick bowl, find sink, put sink, find faucet, open faucet, fillliquid bowl water, pick filled bowl, put countertop, find bread, pick bread, put countertop, find filled bowl, pour filled bowll",
-    "reelay_expression" :   "{pour_water : True} && {bread_in_floor : False}"
+    "reference_steps"   :   "[find bread, pick bread, put floor, find bowl, pick bowl, find sink, put sink, find faucet, open faucet, fillliquid bowl water, pick filled bowl, put countertop, find bread, pick bread, put countertop, find filled bowl, pour filled bowl",
+    "reelay_expression" :   "!(P({pour_water : True} && {bread_in_floor : True}))"
 },
 {   "scene_name"        :   "FloorPlan4",
     "instruction"       :   "Turn on the stoveknob then pick up a knife and slice an apple.",
@@ -79,7 +79,7 @@
     "instruction"       :   "Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.",
     "requirement"       :   "Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.",
     "reference_steps"   :   "[find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]",
-    "reelay_expression" :   "Y {kettle_in_cabinet : True} -> {cabinet_open: False}"
+    "reelay_expression" :   "Y({kettle_in_cabinet : True} -> {cabinet_open: False})"
 },
 {   "scene_name"        :   "FloorPlan12",
     "instruction"       :   "Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.",
