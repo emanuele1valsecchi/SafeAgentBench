@@ -2,7 +2,6 @@
 
 from ai2thor.controller import Controller
 import ai2_thor_task as task
-import time
 import numpy as np
 from scipy import spatial
 import math
@@ -80,6 +79,18 @@ def is_sublist( list_a : list, list_b : list):
 def get_agent_position(controller : Controller) -> dict:
     return controller.last_event.metadata['agent']['position']
 
+def get_agent_rotation_y(controller : Controller):
+    return controller.last_event.metadata['agent']['rotation']['y']
+
+def get_normalized_horizon(current_horizon : float):
+    if current_horizon > 180:
+        current_horizon -= 360
+    
+    return max(-30.0, min(60.0, current_horizon))
+
+def get_agent_normalized_horizon(controller : Controller):
+    return get_normalized_horizon(controller.last_event.metadata['agent']['cameraHorizon'])
+
 def get_agent_reachable_positions(controller: Controller) -> list[dict]:
     """Get the agent's reachable position in the scene."""
     return controller.step(action="GetReachablePositions").metadata["actionReturn"]
@@ -89,10 +100,9 @@ def navigate_to(controller: Controller, target_position, steps = 60):
     Interpolates the agent's position and camera to create a fluid motion.
     """
 
-    agent = controller.last_event.metadata['agent']
-    start_pos = agent['position']
-    start_rot = agent['rotation']['y']
-    start_hor = agent['cameraHorizon']
+    start_pos = get_agent_position(controller)
+    start_rot = get_agent_rotation_y(controller)
+    start_hor = get_agent_normalized_horizon(controller)
 
     target_rot = target_position['rotation']
     target_hor = target_position['horizon']
@@ -120,7 +130,8 @@ def navigate_to(controller: Controller, target_position, steps = 60):
             horizon=cur_hor,
             forceAction=True  # Ensure the teleport goes through, replacing 'standing'
         )
-        time.sleep(SLEEP_BETWEEN_STEPS)
+
+        controller.step( action = "Done")
 
 # === AGENT MOVEMENT ===
 def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, step = 10):
@@ -134,10 +145,9 @@ def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, s
     if direction not in {"left", "right"}:
         raise ValueError("direction must be 'left' or 'right'")
 
-    agent = controller.last_event.metadata['agent']
-    start_pos = agent['position']
-    start_rot = agent['rotation']['y']
-    start_hor = agent['cameraHorizon']
+    start_pos = get_agent_position(controller)
+    start_rot = get_agent_rotation_y(controller)
+    start_hor = get_agent_normalized_horizon(controller)
 
     # Determine target rotation based on direction and degrees
     multiplier = 1 if direction == "right" else -1
@@ -156,8 +166,9 @@ def rotate_agent_smoothly(controller: Controller, direction, total_degrees=90, s
             horizon=start_hor,
             forceAction=True
         )
-        time.sleep(SLEEP_BETWEEN_STEPS)
 
+        controller.step( action = "Done")
+        
 def rotate_agent_left_smoothly(controller: Controller, total_degrees=90, step=10):
     rotate_agent_smoothly(controller, "left", total_degrees, step)
 
@@ -272,12 +283,15 @@ def teleport_to_free_position(controller : Controller):
     Raises:
         Ai2THORException: if the teleport cannot be done in MAX_ATTEMPTS times"""
 
+    current_horizon = get_normalized_horizon(controller.last_event.metadata['agent']['cameraHorizon'])
+
     for j in range(1, MAX_ATTEMPTS):
         free_position = get_closest_reachable_position(get_agent_reachable_positions(controller), get_agent_position(controller), j)
                     
         controller.step(
             action = "Teleport",
             position = free_position,
+            horizon = current_horizon,
             standing = True
         )
 
@@ -290,9 +304,8 @@ def teleport_to_free_position(controller : Controller):
 def rotate_thoward_direction(controller : Controller, target_point : dict):
 
     # Evaluating agent current position
-    current_agent = controller.last_event.metadata['agent']
-    start_pos = current_agent['position']
-    start_rot = current_agent['rotation']['y']
+    start_pos = get_agent_position(controller)
+    start_rot = get_agent_rotation_y(controller)
 
     # Calculating new angle rotation based on the new position to reach
     move_rot_angle = math.atan2(-(target_point['x'] - start_pos['x']), target_point['z'] - start_pos['z'])
@@ -311,9 +324,8 @@ def rotate_thoward_direction(controller : Controller, target_point : dict):
 def look_at_object(controller: Controller, target: dict[str, str]):
     """Smoothly adjusts the agent's rotation and camera horizon to look directly at the target object."""
     agent_pos = get_agent_position(controller)
-    current_agent = controller.last_event.metadata['agent']
-    start_rot = current_agent['rotation']['y']
-    start_hor = current_agent['cameraHorizon']
+    start_rot = get_agent_rotation_y(controller)
+    start_hor = get_agent_normalized_horizon(controller)
 
     target_pos = target['position']
 
@@ -352,7 +364,8 @@ def look_at_object(controller: Controller, target: dict[str, str]):
             horizon=interp_hor,
             forceAction=True
         )
-        time.sleep(SLEEP_BETWEEN_STEPS)
+
+        controller.step( action = "Done")
 
     controller.step(action="Done")
 
@@ -556,6 +569,55 @@ def get_object_position(controller : Controller, object : dict[str, str]):
     return object['position']['x'], object['position']['y'], object['position']['z']
 # === TASK EXECUTION ===
 
+def decode_step(controller : Controller, step : str):
+    action = task.get_action_from_cmd( step )
+
+    if not task.is_action(action):
+        raise ex.BadActionFormat(f"Action '{action}' was not recognized by the agent")
+
+    target_id = task.get_subjects_from_cmd( step )
+
+    match action:
+        case task.DROP | task.THROW | task.MOVEHELDBACK | task.MOVEHELDLEFT | task.MOVEHELDRIGHT | task.MOVEHELDUP | task.MOVEHELDDOWN | task.POUR:
+            if target_id:
+                raise ex.BadActionFormat(f"Action '{action}' should not contain a target")
+
+            return action, None, None
+
+        case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN | task.EMPTYLIQUID:
+            if ((not target_id) or (len(target_id) > 1)):
+                raise ex.BadActionFormat(f"Action '{action}' should contain a single target")
+            else:
+                target_id = target_id[0]
+                
+            obj = get_object_by_id(controller, target_id)
+
+            if not obj:
+                raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
+
+            return action, obj, None
+
+        case task.FILLLIQUID:
+            if (not target_id) or (len(target_id) != 2):
+                raise ex.BadActionFormat(f"Action '{action}' should contain two targets")
+
+            obj =  get_object_by_id(controller, target_id[0])
+
+            liquid = target_id[1].lower()
+
+            if not obj:
+                raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
+
+            if not liquid:
+                raise ex.BadActionFormat(f"To perform '{action}' a valid liquid must be specified")
+            elif not task.is_liquid(liquid):
+                raise ex.BadActionFormat(f"The liquid '{liquid}' is not allowed, only available liquid are {task.get_available_liquids()}")
+
+            return action, obj, liquid
+
+        case _:
+            return None, None, None
+
 def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None, rye_manager : rye.RyeManager = None) -> tuple[bool, list[str]]:
     """Execute the plan in the Ai2Thor environment
     
@@ -566,51 +628,14 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
     
     for i, step in enumerate(plan):
 
-        action = task.get_action_from_cmd( step )
+        action, obj, liquid = decode_step(controller, step)
 
-        if not task.is_action(action):
-            raise ex.BadActionFormat(f"Action '{action}' was not recognized by the agent")
+        if not action and not obj and not liquid:
+            raise ex.BadActionFormat(f"Error in command given to the agent")
 
-        target_id = task.get_subjects_from_cmd( step )
-
-        match action:
-            case task.DROP | task.THROW | task.MOVEHELDBACK | task.MOVEHELDLEFT | task.MOVEHELDRIGHT | task.MOVEHELDUP | task.MOVEHELDDOWN:
-                if target_id:
-                    raise ex.BadActionFormat(f"Action '{action}' should not contain a target")
-
-                print(f"-> {action}")
-
-            case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN | task.EMPTYLIQUID:
-                if ((not target_id) or (len(target_id) > 1)):
-                    raise ex.BadActionFormat(f"Action '{action}' should contain a single target")
-                else:
-                    target_id = target_id[0]
-                    
-                obj = get_object_by_id(controller, target_id)
-
-                if not obj:
-                    raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
-
-                print(f"-> {action} {get_object_type(obj)}")
-
-            case task.FILLLIQUID:
-                if (not target_id) or (len(target_id) != 2):
-                    raise ex.BadActionFormat(f"Action '{action}' should contain two targets")
-
-                obj =  get_object_by_id(controller, target_id[0])
-
-                liquid = target_id[1].lower()
-
-                if not obj:
-                    raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
-
-                if not liquid:
-                    raise ex.BadActionFormat(f"To perform '{action}' a valid liquid must be specified")
-                elif not task.is_liquid(liquid):
-                    raise ex.BadActionFormat(f"The liquid '{liquid}' is not allowed, only available liquid are {task.get_available_liquids()}")
-
-                print(f"-> {action} {get_object_type(obj)} {liquid}")
-                
+        step_command = f"{action} {get_object_type(obj) if obj else ""} {liquid or ""}".strip()
+        print(f"-> {step_command}")
+        
         match action:
             case task.FIND:
                 reach_object(controller, obj)
@@ -739,13 +764,14 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
             case _:
                 raise ex.BadActionFormat(f"Action '{action}' not allowed")
 
-        if (i != (len(plan) - 1)) and ai_manager:
-            new_plan = ai_manager.update_plan(plan, (i + 1), get_objects_in_scene(controller))
+        if ai_manager:
+            ai_manager.update_performed_sctions(step_command)
 
-            if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
-                return False, new_plan
-        
-        #time.sleep(SLEEP_BETWEEN_STEPS)
+            if (i != (len(plan) - 1)):
+                new_plan = ai_manager.update_plan(plan, (i + 1), get_objects_in_scene(controller))
+
+                if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
+                    return False, new_plan
 
     return True, None
 
@@ -1150,8 +1176,6 @@ def open_object(controller: Controller, object: dict):
                     raise ex.Ai2THORException(controller)
             
             openness += openness
-            controller.step(action="MoveBack")
-            controller.step(action = "Done")
 
     elif not object['openable']:
         raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
