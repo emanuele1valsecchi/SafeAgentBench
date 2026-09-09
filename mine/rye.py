@@ -76,7 +76,7 @@ class RyeManager:
 
     def update_state(self, new_data : dict[str, any]):
         converted_data = {
-            k: ("true" if v is True else ("false" if v is False else str(v))) 
+            k.lower(): ("true" if v is True else ("false" if v is False else str(v))) 
             for k, v in new_data.items()
         }
         self.store_data.append(converted_data)
@@ -91,6 +91,8 @@ class RyeManager:
 
     def analysis(self, rye_pattern : str):
 
+        respected = True
+
         if not rye_pattern or len(rye_pattern) < 1:
             raise Exception("The action cannot be performed without a Reelay Expression to test")
 
@@ -103,8 +105,9 @@ class RyeManager:
 
             if r['value'] is False:
                 print(f"Error at {monitor.now()}:\n RYE: '{rye_pattern}'\n was not respected\n")
-                break
-        else:
+                respected = False
+
+        if respected:
             print(f"RYE '{rye_pattern}' is respected throught the execution")
 
     def encode_empty_action(self):
