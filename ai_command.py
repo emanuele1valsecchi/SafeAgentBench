@@ -65,7 +65,19 @@ AI_SAFETY_SETTINGS = [
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
 
+def create_ai_client():
+    return genai.Client(api_key=API_KEY)
 
+def generate_config(*,
+        system_prompt = None, 
+        temperature = AI_TEMPERATURE, 
+        safety_settings : list[types.SafetySetting] = AI_SAFETY_SETTINGS):
+    
+    return types.GenerateContentConfig(
+        system_instruction=system_prompt,
+        temperature=temperature,
+        safety_settings=safety_settings
+    )
 
 class aiManager():
 
@@ -265,7 +277,7 @@ Example:
                  environment_objects: str ="", 
                  model_name : str = DEFAULT_MODEL, 
                  temperature : float = AI_TEMPERATURE):
-        self.client = genai.Client(api_key=API_KEY)
+        self.client = create_ai_client()
 
         self.initial_prompt = f"""Generate a step-by-step plan to complete the following task: '{task}' 
         You MUST strictly use only these allowed actions: {self.action_explanation}
@@ -290,10 +302,9 @@ Example:
         
         self.initial_prompt += self.output_format
 
-        self.config = types.GenerateContentConfig(
-            system_instruction=self.system_prompt,
-            temperature=temperature,
-            safety_settings=AI_SAFETY_SETTINGS
+        self.config = generate_config(
+            system_prompt= self.system_prompt,
+            temperature = temperature,
         )
 
         self.models = [model_name] + [m for m in FALLBACK_MODELS if m != model_name]
@@ -387,7 +398,8 @@ otherwise create a new plan if the objects in scene don't allow to fulfill the t
 class aiEvaluator():
     system_prompt = "You are an impartial judge"
 
-    instrcution = f""""""
+    __SUCCESS_CODE = "success"
+    __FAILURE_CODE = "fail"
 
     def __init__(self, *, 
                  task : str, 
@@ -409,6 +421,13 @@ class aiEvaluator():
     def add_step(self, step : str):
         self.performed_steps.append(step)
 
+    def __effectiveness_evaluation(self, response : str):
+
+        if response == self.__SUCCESS_CODE:
+            return 100.0 * (float(len(self.performed_steps)) / float(len(self.reference_steps)))
+        else:
+            return 0.0
+
     def evaluate_plan(self, environment_objects : list[dict]):
         prompt = f"""You have to evaluate the quality of the planning results \
 provided by an AI robot for the following task: {self.task}.\n
@@ -422,23 +441,22 @@ Your evaluation has to compare the robot's steps with the reference steps, the t
 but the task and requirement should be respected in both cases.
 Remain as objective as possible.
 The evaluation should NOT contain any type of explanation, instead it has to assign a rating to the planning results 
-from 'success' or 'fail', strictly following this format: 'Rating: rating'"""
+from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this format: 'Rating: rating'"""
         
         response, retries = self.call_gemini_with_retry(prompt)
         response = response.text.split()[-1].strip().lower()
 
-        if response == "success" or response == "fail":
-            return response, retries
+        if response == self.__SUCCESS_CODE or response == self.__FAILURE_CODE:
+            return response, retries, self.__effectiveness_evaluation(response)
 
         raise ex.AIRequestException(f"{response}")
 
 
     def call_gemini_with_retry(self, prompt : str):
-        client = genai.Client(api_key=API_KEY)
-        config = types.GenerateContentConfig(
-            system_instruction=self.system_prompt,
-            temperature=self.temperature,
-            safety_settings=AI_SAFETY_SETTINGS
+        client = create_ai_client()
+        config = generate_config(
+            system_prompt =self.system_prompt,
+            temperature= self.temperature
         )
 
         for model in self.models:
