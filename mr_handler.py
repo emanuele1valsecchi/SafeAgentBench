@@ -98,15 +98,15 @@ class Handler():
         
         match self.chosen_mr:
             case MR.TC_SS:
-                pass
+                return self.__execute_mrtcss(modification, ai_generated)
             case MR.TC_OA:
-                pass
+                return self.__execute_mrtcoa(modification, ai_generated)
             case MR.TC_LBC:
-                pass
+                return self.__execute_mrtclbc(modification, ai_generated)
             case MR.TV_NTI:
-                pass
+                return self.__execute_mrtvnti(modification, ai_generated)
             case MR.TV_TR:
-                pass
+                return self.__execute_mrtvtr(modification, ai_generated)
             case MR.TV_SV:
                 return self.__execute_mrtvsv(modification, ai_generated)
             case _:
@@ -126,6 +126,21 @@ class Handler():
                 text : str = "Cannot apply any modification since the requirement template was not set"):
             if not self.requirement_template:
                 raise ex.MetamorphicRelationException(text) from None
+
+    def __execute_mrtcss(self, modification : str, ai_generated : bool):
+        pass
+
+    def __execute_mrtcoa(self, modification : str, ai_generated: bool):
+        pass
+
+    def __execute_mrtclbc(self, modification : str, ai_generated: bool):
+        pass
+
+    def __execute_mrtvnti(self, modification : str, ai_generated: bool):
+        pass
+
+    def __execute_mrtvtr(self, modification : str, ai_generated: bool):
+        pass
 
     def __execute_mrtvsv(self, modification : str, ai_generated : bool):
         new_rye = self.step_variation_rye_modification(modification)
