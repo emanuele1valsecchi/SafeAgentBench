@@ -108,7 +108,7 @@ class RyeManager:
                 respected = False
 
         if respected:
-            print(f"RYE '{rye_pattern}' is respected throught the execution")
+            print(f"RYE '{rye_pattern}' is respected throught the execution\n")
 
     def encode_empty_action(self):
         self.update_state({})
