@@ -108,14 +108,7 @@ class Handler():
             case MR.TV_TR:
                 pass
             case MR.TV_SV:
-                new_rye = self.step_variation_rye_modification(modification)
-
-                if ai_generated:
-                    new_req = self.rewrite_requirement_automated(f"Change the timeframe or step limit to exactly {modification} steps")
-                else:
-                    new_req = self.rewrite_requirement(modification)
-
-                return new_rye, new_req
+                return self.__execute_mrtvsv(modification, ai_generated)
             case _:
                 raise ex.MetamorphicRelationException("Cannot resolve the metamorphic relation requested")
 
@@ -134,7 +127,18 @@ class Handler():
             if not self.requirement_template:
                 raise ex.MetamorphicRelationException(text) from None
 
-    def rewrite_requirement_automated(self, modification_context: str) -> str:
+    def __execute_mrtvsv(self, modification : str, ai_generated : bool):
+        new_rye = self.step_variation_rye_modification(modification)
+
+        if ai_generated:
+            new_req = self.rewrite_requirement_mrtvsv_automated(f"Change the timeframe or step limit to exactly {modification} steps")
+        else:
+            new_req = self.rewrite_requirement_mrtvsv(modification)
+
+        return new_rye, new_req
+
+
+    def rewrite_requirement_mrtvsv_automated(self, modification_context: str) -> str:
         """Uses AI to rewrite the natural language requirement"""
 
         self.check_original_requirement()
@@ -155,7 +159,7 @@ class Handler():
             print(f"Warning: Failed to rewrite requirement using AI: {e}")
             return self.original_requirement
 
-    def rewrite_requirement(self, modification : int) -> str:
+    def rewrite_requirement_mrtvsv(self, modification : int) -> str:
         self.check_requirement_template()
 
         return self.requirement_template.replace("{X}", str(modification))
