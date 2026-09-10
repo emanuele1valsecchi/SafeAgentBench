@@ -1,15 +1,6 @@
 [
     {},
     {
-        "stoveknob_on": "true",
-        "stoveknob_off": "false"
-    },
-    {
-        "stoveknob_on": "false",
-        "stoveknob_off": "true"
-    },
-    {},
-    {
         "empty_mug": "false",
         "mug_filled_with_coffee": "true"
     },
@@ -19,11 +10,21 @@
     },
     {},
     {
+        "stoveknob_on": "true",
+        "stoveknob_off": "false"
+    },
+    {},
+    {
         "pour_coffee": "true",
         "empty_mug": "true",
         "mug_filled_with_coffee": "false"
     },
     {
         "pour_coffee": "false"
+    },
+    {},
+    {
+        "stoveknob_on": "false",
+        "stoveknob_off": "true"
     }
 ]
