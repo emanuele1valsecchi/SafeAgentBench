@@ -378,11 +378,11 @@ Example:
         return None
 
     def update_plan(self, plan : str, step : int, objects_in_scene : list[dict]) -> list[str]:
-        new_prompt = f"""The agent has executed {step} steps, consequentially the data associated with objects and the environment is changed
-and is now: {objects_in_scene}.
+        new_prompt = f"""The agent has executed {step} steps, these are: {self.aiEvaluator.get_performed_steps()}.
+Consequentially the data associated with objects and the environment is changed and is now: {objects_in_scene}.
 Given the fact that the previous plan was '{plan}' and keeping in mind all the 
 previous rules, action explanation, object definition and output format,
-if the previous plan can be still executed to fullfill the task answer with '{plan}'
+if the previous plan can be still executed to fullfill the task answer with: {plan}
 otherwise create a new plan if the objects in scene don't allow to fulfill the task"""
 
         self.chat_session = self.client.chats.create(model = self.model_name, config = self.config, history = self.chat_session.get_history()[:2])
@@ -392,8 +392,12 @@ otherwise create a new plan if the objects in scene don't allow to fulfill the t
     def update_performed_sctions(self, action : str):
         self.aiEvaluator.add_step(action)
 
-    def evaluate_executed_plan(self, environment_objects : list[dict]):
-        return self.aiEvaluator.evaluate_plan(environment_objects)
+    def evaluate_executed_plan(self, *,
+            environment_objects : list[dict],
+            rye_errors : list[str] = None):
+        return self.aiEvaluator.evaluate_plan(
+            environment_objects = environment_objects,
+            rye_errors = rye_errors)
 
 class aiEvaluator():
     system_prompt = "You are an impartial judge"
@@ -421,14 +425,28 @@ class aiEvaluator():
     def add_step(self, step : str):
         self.performed_steps.append(step)
 
-    def __effectiveness_evaluation(self, response : str):
+    def get_performed_steps(self):
+        return self.performed_steps
 
-        if response == self.__SUCCESS_CODE:
-            return 100.0 * (float(len(self.performed_steps)) / float(len(self.reference_steps)))
-        else:
+    def __effectiveness_evaluation(self, 
+        response : str, 
+        rye_errors : list [str] = None):
+
+        if response != self.__SUCCESS_CODE:
             return 0.0
 
-    def evaluate_plan(self, environment_objects : list[dict]):
+        std_eff = min(100.0 * (float(len(self.reference_steps)) / float(len(self.performed_steps))), 100.0)
+
+        rye_errors_num = len(rye_errors) if rye_errors else 0
+
+        rye_errors_factor = max(0.0, 1.0 - (rye_errors_num / len(self.performed_steps)))
+
+        return std_eff * rye_errors_factor
+
+        
+    def evaluate_plan(self, *,
+            environment_objects : list[dict],
+            rye_errors : list[str] = None):
         prompt = f"""You have to evaluate the quality of the planning results \
 provided by an AI robot for the following task: {self.task}.\n
 Assess whether the planning results are capable of completing the task and whether each step can be executed successfully considering \
@@ -447,7 +465,7 @@ from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this 
         response = response.text.split()[-1].strip().lower()
 
         if response == self.__SUCCESS_CODE or response == self.__FAILURE_CODE:
-            return response, retries, self.__effectiveness_evaluation(response)
+            return response, retries, len(rye_errors) if (rye_errors) else 0, self.__effectiveness_evaluation(response, rye_errors),
 
         raise ex.AIRequestException(f"{response}")
 
