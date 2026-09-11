@@ -47,6 +47,7 @@ def create_controller(agentMode = "default",
 # === UTILS ===
 
 def last_action_state(controller : Controller):
+    f"""Access the {controller} element and returns 'lastActionSuccess' property"""
     return controller.last_event.metadata['lastActionSuccess']
 
 def print_metadata(controller : Controller):
@@ -178,6 +179,9 @@ def rotate_agent_right_smoothly(controller: Controller, total_degrees=90, step=1
 def get_kdtree_reachable_positions(agent_reachable_positions : list[dict]) -> spatial._kdtree.KDTree:
     return spatial.KDTree(np.array([[p['x'], p['y'], p['z']] for p in agent_reachable_positions]))
 
+def should_agent_stand(target_pos : dict):
+    return target_pos['y'] > 0.6
+
 def get_closest_reachable_position(agent_reachable_positions : list[dict], target_position : dict, nth : int = 1) -> dict:
     kdtree_reachable_positions = get_kdtree_reachable_positions(agent_reachable_positions)
     _, i = kdtree_reachable_positions.query([target_position['x'], target_position['y'], target_position['z']], k = nth + 1)
@@ -213,15 +217,17 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
     rot_angle = math.atan2(-(target_pos['x'] - clos_pos['x']), target_pos['z'] - clos_pos['z'])
     if rot_angle > 0:
         rot_angle -= 2 * math.pi
-
+    
     rot_angle = -(180 / math.pi) * rot_angle  # in degrees
 
+    # DYNAMIC POSTURE: Determine if the object is low enough to crouch
+    camera_offset = CAMERA_HEIGHT_OFFSET if (should_agent_stand(target_pos)) else 0.0
+
     # Evaluate the desired horizon angle
-    camera_height = controller.last_event.metadata['agent']['position']['y'] + CAMERA_HEIGHT_OFFSET
+    camera_height = controller.last_event.metadata['agent']['position']['y'] + camera_offset
     xz_dist = math.hypot(target_pos['x'] - clos_pos['x'], target_pos['z'] - clos_pos['z'])
     hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
     hor_angle = (180 / math.pi) * hor_angle  # in degrees
-    hor_angle *= 0.9  # adjust angle for better view
     hor_angle = -hor_angle # adjusting the direction that is the opposite of the one evaluated
 
     if hor_angle < -30:
@@ -328,6 +334,7 @@ def look_at_object(controller: Controller, target: dict[str, str]):
     start_hor = get_agent_normalized_horizon(controller)
 
     target_pos = target['position']
+    standing = should_agent_stand(target_pos)
 
     # Calculate target rotation angle
     rot_angle = math.atan2(-(target_pos['x'] - agent_pos['x']), target_pos['z'] - agent_pos['z'])
@@ -335,12 +342,13 @@ def look_at_object(controller: Controller, target: dict[str, str]):
         rot_angle -= 2 * math.pi
     rot_angle = -(180 / math.pi) * rot_angle
 
+    camera_offset = CAMERA_HEIGHT_OFFSET if standing else 0.0
+
     # Calculate target horizon angle
-    camera_height = agent_pos['y'] + CAMERA_HEIGHT_OFFSET
+    camera_height = agent_pos['y'] + camera_offset
     xz_dist = math.hypot(target_pos['x'] - agent_pos['x'], target_pos['z'] - agent_pos['z'])
     hor_angle = math.atan2((target_pos['y'] - camera_height), xz_dist)
     hor_angle = (180 / math.pi) * hor_angle
-    hor_angle *= 0.9
     hor_angle = -hor_angle
 
     if hor_angle < -30:
@@ -362,6 +370,7 @@ def look_at_object(controller: Controller, target: dict[str, str]):
             position=agent_pos,
             rotation={'x': 0, 'y': interp_rot, 'z': 0},
             horizon=interp_hor,
+            standing= standing,
             forceAction=True
         )
 
@@ -802,9 +811,19 @@ def resilient_execution(controller : Controller, **kwargs):
     
     controller.step(action = "Done")
 
+def is_reached_object(controller : Controller, target : dict):
+    target = get_object_by_id(controller, get_object_id(target))
+
+    if target and is_object_close(target):
+        if not get_object_parent_receptacles(target) or is_object_interactable(target):
+            return True
+
+    return False
+
 def reach_object(controller : Controller, obj : dict[str, str]):
 
     nth = 1
+    standing = should_agent_stand(obj['position'])
 
     for i in range(MAX_ATTEMPTS):
 
@@ -823,18 +842,14 @@ def reach_object(controller : Controller, obj : dict[str, str]):
                 position = p,
                 rotation = {'x': 0, 'y': move_rot_angle, 'z': 0},
                 horizon = 0.0,
-                standing = True
+                standing = standing
             )
 
             if not last_action_state(controller):
                 if ( ex.Ai2THORException(controller).is_collision() ):
                     teleport_to_free_position(controller)
                 
-                if i == 10 :
-                    nth -= 10
-                else:
-                    nth += 1
-                
+                nth += 1
                 break
             else:
                 controller.step(action = "Done")
@@ -844,20 +859,30 @@ def reach_object(controller : Controller, obj : dict[str, str]):
                 position = closest_position,
                 rotation = {'x': 0, 'y': rotation_angle, 'z': 0},
                 horizon = horizon_angle,
-                standing = True
+                standing = standing,
+                forceAction = True
             )
+
             if last_action_state(controller):
                 controller.step(action = "Done")
-
                 look_at_object(controller, obj)
-            break
+
+                if is_reached_object(controller, obj):
+                    break
+
+                nth += 1
+            else:
+                if ( ex.Ai2THORException(controller).is_collision() ):
+                    teleport_to_free_position(controller)
+                
+                nth += 1
     
 def pick_up_object(controller: Controller, object : dict):
 
     if not is_object_close(object):
-        raise ex.InteractionException("The object is not close to the agent")
+        raise ex.InteractionException("THe object is not close to the agent")
     elif get_object_parent_receptacles(object) and ( not is_object_interactable(object) ):
-        raise ex.InteractionException(f"Cannot interact with the object because it is contained in {get_object_parent_receptacles}")
+        raise ex.InteractionException(f"Cannot interact with the object because it is contained in {get_object_parent_receptacles(object)}")
     elif get_agent_inventory(controller):
         raise ex.HoldingObjectsException("Agent can only pick up one object at a time")
 
