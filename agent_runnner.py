@@ -37,7 +37,7 @@ def load_pre_defined_setup() -> tuple[str | None, str | None, str | None, str | 
     try:
         with open("./dataset/kitchen_tasks_and_constraints.json", "r") as f:
             pre_defined_list = json.load(f)
-    except:
+    except (FileNotFoundError, json.JSONDecodeError):
         print("Error in loading pre defined tasks. Please ensure the file exists in the specified path")
 
     print("Available pre defined use case:")
@@ -285,33 +285,12 @@ while True:
 
         print("Executing plan: ")
         try:
-            if ai_replanning and rye_testing:
-                executed, ai_steps = ai2thor_func.execute_plan(
-                    controller  = controller, 
-                    plan        = ai_steps, 
-                    ai_manager  = ai_manager, 
-                    rye_manager = rye_manager
-                )
-
-            elif ai_replanning and not rye_manager:
-                executed, ai_steps = ai2thor_func.execute_plan(
-                    controller  = controller, 
-                    plan        = ai_steps, 
-                    ai_manager  = ai_manager
-                )
-
-            elif not ai_replanning and rye_manager:
-                executed, ai_steps = ai2thor_func.execute_plan(
-                    controller  = controller, 
-                    plan        = ai_steps, 
-                    rye_manager = rye_manager
-                )
-                
-            elif not ai_replanning and not rye_manager:
-                executed, ai_steps = ai2thor_func.execute_plan(
-                    controller  = controller, 
-                    plan        = ai_steps 
-                )
+            executed, ai_steps = ai2thor_func.execute_plan(
+                controller  = controller, 
+                plan        = ai_steps, 
+                ai_manager  = ai_manager if ai_replanning else None, 
+                rye_manager = rye_manager if rye_testing else None
+            )
 
         except Exception as e:
             u.wait_ui(text = e, end_message = "Press Enter to quit the program")
@@ -327,26 +306,35 @@ while True:
 
     u.print_separator()
 
-    if ref_evaluation:
-        print("Evaluating agent plan against reference...")
-
-        try:
-            response, retries, effectiveness = ai_manager.evaluate_executed_plan(controller.last_event.metadata['objects'])
-            print(f"Generated plan evaluation: {response}")
-            print(f"Retries used to evaluate: {retries}")
-            print(f"Generated plan effectinveness: {effectiveness}")
-        except e:
-            print(e)
-
-        u.print_separator()
-
-
     if rye_testing and chosen_reelay_expression:
         rye_manager.save_to_json()
 
         u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis\n")
 
         rye_manager.analysis(chosen_reelay_expression)
+
+        if not rye_manager.get_errors():
+            print(f"RYE '{chosen_reelay_expression}' is respected throught the execution\n")
+        else:
+            for e in rye_manager.get_errors():
+                print(e)
+
+        u.print_separator()
+
+    if ref_evaluation:
+        print("Evaluating agent plan against reference...")
+
+        try:
+            response, retries, rye_error_count, effectiveness = ai_manager.evaluate_executed_plan(
+                environment_objects=controller.last_event.metadata['objects'],
+                rye_errors= rye_manager.get_errors() if (rye_manager) else None)
+            
+            print(f"Generated plan evaluation: {response}")
+            print(f"Retries used to evaluate: {retries}")
+            print(f"Errors in reelay expressions: {rye_error_count}")
+            print(f"Generated plan effectinveness: {effectiveness}")
+        except Exception as e:
+            print(e)
 
         u.print_separator()
 
