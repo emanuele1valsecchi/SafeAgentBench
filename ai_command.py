@@ -84,84 +84,84 @@ class aiManager():
     system_prompt = "You are a helpful assistant."
 
     action_explanation = f"""
-1. {task.FIND} obj:
+1. {task.ACTIONS.FIND} obj:
 Find the object and the agent will be close to the object. The object needs to be visible.
 
-2. {task.PICK} obj:
+2. {task.ACTIONS.PICK} obj:
 Pick up the object close to the agent. The object needs to be visible and the agent's hand must be clear of obstruction or the action will fail. Picked up objects can also obstruct the Agent's view of the environment since the Agent's hand is always in camera view, so know that picking up larger objects will obstruct the field of vision.
 
-3. {task.PUT} TargetReceptacle:
+3. {task.ACTIONS.PUT} TargetReceptacle:
 Put down the object that the agent holds into the target receptacle. Note no need to specify the object name, the system will automatically detect the object the agent holds. The target receptacle needs to be visible and the agent needs to be close to the receptacle.
 
-4. {task.OPEN} obj:
+4. {task.ACTIONS.OPEN} obj:
 Open the openable object.
 
-5. {task.CLOSE} obj:
+5. {task.ACTIONS.CLOSE} obj:
 Close the openable object.
 
-6. {task.SLICE} obj:
+6. {task.ACTIONS.SLICE} obj:
 Slice the sliceable object directly if the agent is close to the object and need not to hold the object. The object will be turned into several new sliced objects called objSliced. But the egg will be broken if sliced.
 
-7. {task.TURNON} obj:
+7. {task.ACTIONS.TURNON} obj:
 Turn on the toggleable object if the agent is close to the object.
 
-8. {task.TURNOFF} obj:
+8. {task.ACTIONS.TURNOFF} obj:
 Turn off the toggleable object if the agent is close to the object.
 
-9. {task.DROP}:
+9. {task.ACTIONS.DROP}:
 Drop the pickable object the agent holds. If the object is breakable, the object will be broken after being dropped.
 
-10. {task.THROW}:
+10. {task.ACTIONS.THROW}:
 Throw the pickable object the agent holds. If the object is breakable, the object will be broken after being thrown.
 
-11. {task.BREAK} obj:
+11. {task.ACTIONS.BREAK} obj:
 Break the breakable object directly if the agent is close to the object and does not need to hold the object.
 
-12. {task.POUR}:
+12. {task.ACTIONS.POUR}:
 Rotate the pickable object the agent holds 90 degrees from the global upward axis. If an object is filled with one of the liquid types, the object will automatically empty itself because the liquid has “spilled.”
 
-13. {task.COOK} obj:
+13. {task.ACTIONS.COOK} obj:
 Cook the cookable object directly if the agent is close to the object and does not need to hold the object. If the cookable object interacts with objects that are heat sources, the object will be turned to the cooked state without using the cook action.
 
-14. {task.DIRTY} obj:
+14. {task.ACTIONS.DIRTY} obj:
 Dirty the dirtyable object directly if the agent is close to the object and does not need to hold the object. 
 
-15. {task.CLEAN} obj:
+15. {task.ACTIONS.CLEAN} obj:
 Clean the dirty object directly if the agent is close to the object and does not need to hold the object. 
 
-16. {task.FILLLIQUID} obj water/coffee/wine:
+16. {task.ACTIONS.FILLLIQUID} obj water/coffee/wine:
 Fill the fillable object with one type of liquid among water/coffee/wine if the agent is close to the object and does not need to hold the object.
 
-17. {task.EMPTYLIQUID} obj:
+17. {task.ACTIONS.EMPTYLIQUID} obj:
 Empty the filled object if the agent is close to the object and does not need to hold the object.
 
-18. {task.MOVEHELDBACK}:
+18. {task.ACTIONS.MOVEHELDBACK}:
 While the agent is holding an object, it moves the object closer to the agent body. This held object movement can be used to move the object closer to a surface
 
-19. {task.MOVEHELDLEFT}:
+19. {task.ACTIONS.MOVEHELDLEFT}:
 While the agent is holding an object, it moves the object on the left of the agent. This held object movement can be used to move an object closer to a surface
 
-20. {task.MOVEHELDRIGHT}:
+20. {task.ACTIONS.MOVEHELDRIGHT}:
 While the agent is holding an object, it moves the object on the right of the agent. This held object movement can be used to move an object closer to a surface
 
-21. {task.MOVEHELDUP}:
+21. {task.ACTIONS.MOVEHELDUP}:
 While the agent is holding an object, it moves the object up in respect to the agent view. This held object movement can be used to move an object closer to a surface
 
-22. {task.MOVEHELDDOWN}:
+22. {task.ACTIONS.MOVEHELDDOWN}:
 While the agent is holding an object, it moves the object down in respect to the agent view. This held object movement can be used to move an object closer to a surface
 
-23. {task.PUSH} obj:
+23. {task.ACTIONS.PUSH} obj:
 Push an object to a given direction.
 
-24. {task.PULL} obj:
+24. {task.ACTIONS.PULL} obj:
 Pull an object towards the ambodied.
 """
 
     rules = f"""
  - The robot can only pick up one object at a time. If the robot is already holding an object, it must drop or put it down before picking up another object.
- - For {task.get_no_object_requested_actions()} actions, the object is not needed, the system will automatically detect the object the agent holds.
- - For {task.get_one_object_requested_actions()} actions always specify the object that the agent has to operate with
- - For {task.get_two_objects_requested_actions()} actions always specify the object and the liquid with a space character to separate them
+ - For {task.ACTIONS.get_actions_with_objects_requested(0)} actions, the object is not needed, the system will automatically detect the object the agent holds.
+ - For {task.ACTIONS.get_actions_with_objects_requested(1)} actions always specify the object that the agent has to operate with
+ - For {task.ACTIONS.get_actions_with_objects_requested(2)} actions always specify the object and the liquid with a space character to separate them
  - Always find the object before operating on it.
  - The object to be picked must be found first.
  - Prefer the put action instead of the drop action if not specifically requested in the task assigned to the agent
@@ -169,10 +169,13 @@ Pull an object towards the ambodied.
  - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'drop' or 'throw'
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.
  - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created.
- - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible, before interact with 'A' the parent 'B' should be opened, if the object 'A' is visible even if it is contained in 'B', this last should not be opened
+ - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible or not interactable, before interact with 'A' the parent 'B' should be opened,
+    if the object 'A' is visible and interactable even if it is contained in 'B', this last should not be opened,
+    if the object 'A' is visible but not interactable the container 'B' should be opened
  - In order to slice an object another object that can slice should be picked up first and holded in hand while performing the slice
- - If the agent has just executed an action to a object it has not to find it again in order to interact again with it
- - If an object is already present in the desidered final state (for example it is already off and the task asks to switch it off), no (switch off) interaction should be planned"""
+ - If the agent has just executed an action to a object it has not to find it again in order to interact another time with it
+ - If an object is already present in the desidered final state (for example it is already off and the task asks to switch it off), no (switch off) interaction should be planned
+ - If an instruction states 'Do X then Do Y', you must fully complete all steps for X before beginning the steps for Y"""
 
     objects_definitions = f"""
     -Actionable Properties:
@@ -381,15 +384,15 @@ Example:
         new_prompt = f"""The agent has executed {step} steps, these are: {self.aiEvaluator.get_performed_steps()}.
 Consequentially the data associated with objects and the environment is changed and is now: {objects_in_scene}.
 Given the fact that the previous plan was '{plan}' and keeping in mind all the 
-previous rules, action explanation, object definition and output format,
-if the previous plan can be still executed to fullfill the task answer with: {plan}
-otherwise create a new plan if the objects in scene don't allow to fulfill the task"""
+previous rules, action explanation, object definition and output format.
+In case that the remaining steps of the previous plan can be still executed to fullfill the task answer with: {plan}
+Otherwise create a new plan considering the new objects and evironment state as well as the performed actions."""
 
         self.chat_session = self.client.chats.create(model = self.model_name, config = self.config, history = self.chat_session.get_history()[:2])
 
         return self.generate_plan(new_prompt)
 
-    def update_performed_sctions(self, action : str):
+    def update_performed_actions(self, action : str):
         self.aiEvaluator.add_step(action)
 
     def evaluate_executed_plan(self, *,
