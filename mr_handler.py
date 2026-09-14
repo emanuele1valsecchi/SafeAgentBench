@@ -2,6 +2,12 @@ import re
 import custom_exceptions as ex
 from enum import Enum
 import ai_command as aicmd
+from ai2thor.controller import Controller
+from ai2_thor_functionalities import get_object_type
+from ai2_thor_functionalities import get_objects_in_scene
+from ai2_thor_functionalities import remove_object_from_scene
+from ai2_thor_functionalities import get_object_id
+from ai2_thor_functionalities import change_brightness
 
 def print_mrs(mrs : MR, offset : int = 1):
     for i, mr in enumerate(mrs):
@@ -20,8 +26,13 @@ def show_mrs(types = True):
 
 class MR(Enum):
     TC_SS  = (1, "Synonym Substitution", "")
-    TC_OA  = (2, "Object Addition", "")
-    TC_LBC = (3, "Light Brightness Change", "")
+    TC_OR  = (2, "Object Removal", "From the following objects select one to remove:\n{objs}\n\n Object to remove:")
+    TC_LBC = (3, "Light Brightness Change", "Insert the bounds with which a light's intensity may be multiplied by.\
+              \n Notes:\
+              \n - Higher values are brighter\
+              \n - Both values must be greater than 0\
+              \n - The format to respect is 'min, max'\
+              \n Values:")
     TV_NTI = (4, "Negation or Task Inversion", "")
     TV_TR  = (5, "Target object Relocation", "")
     TV_SV  = (6, "Step number Variation", "Insert the new step number in within the action should be performed:")
@@ -35,13 +46,13 @@ class MR(Enum):
 
     @classmethod
     def get_tc(cls):
-        return (cls.TC_SS, cls.TC_OA, cls.TC_LBC)
+        return (cls.TC_SS, cls.TC_OR, cls.TC_LBC)
 
     @classmethod
     def get_tv(cls):
         return (cls.TV_NTI, cls.TV_TR, cls.TV_SV)
 
-    def get_question(self):
+    def get_question(self) -> str:
         return self.question
 
     def __str__(self) -> str:
@@ -50,12 +61,15 @@ class MR(Enum):
 class Handler():
     # Used for MR.TV_SV
     new_step_number = None
+    chosen_mr = None
 
     def __init__(self, *,
+                 controller : Controller,
                  chosen_mr : MR | int = None,
                  original_reelay : str = None,
                  original_requirement : str = None,
                  requirement_template : str = None):
+        self.controller = controller
         self.set_mr( chosen_mr = chosen_mr)
         self.original_reelay = original_reelay
         self.original_requirement = original_requirement
@@ -86,10 +100,42 @@ class Handler():
         if not self.chosen_mr:
             raise ex.MetamorphicRelationException("Before applying any modification the type of metamorphic relation should be chosen")
         
-    def question(self) -> tuple[str, ...]:
+    def question(self) -> str:
         self.__check_mr_set()
-        return self.chosen_mr.get_question()
+        qst = self.chosen_mr.get_question()
 
+        match self.chosen_mr:
+            case MR.TC_SS:
+                pass
+            case MR.TC_OR:
+                return self.tc_or_question_construction(question = qst)
+            case MR.TC_LBC:
+                return qst
+            case MR.TV_NTI:
+                pass
+            case MR.TV_TR:
+                pass
+            case _: #MR.TV_SV
+                return qst
+
+    def tc_or_question_construction(self, question : str):
+        objs = get_objects_in_scene(controller = self.controller) 
+
+        num_rows = (len(objs) + 3 - 1) // 3
+
+        objs_formatted = ""
+        
+        for i in range(num_rows):
+            row_items = []
+            
+            for col_index in range(i, len(objs), num_rows):
+                
+                row_items.append(f"({col_index + 1}) {get_object_type(objs[col_index]):<14}")
+            
+            if row_items:
+                objs_formatted += "  " + "  ".join(row_items) + "\n"
+
+        return question.format(objs = objs_formatted)
 
     def apply_modification(self, *,
                 modification : str, 
@@ -99,8 +145,8 @@ class Handler():
         match self.chosen_mr:
             case MR.TC_SS:
                 return self.__execute_mrtcss(modification, ai_generated)
-            case MR.TC_OA:
-                return self.__execute_mrtcoa(modification, ai_generated)
+            case MR.TC_OR:
+                return self.__execute_mrtcor(modification, ai_generated)
             case MR.TC_LBC:
                 return self.__execute_mrtclbc(modification, ai_generated)
             case MR.TV_NTI:
@@ -128,19 +174,45 @@ class Handler():
                 raise ex.MetamorphicRelationException(text) from None
 
     def __execute_mrtcss(self, modification : str, ai_generated : bool):
-        pass
+        return self.original_reelay, self.original_requirement
 
-    def __execute_mrtcoa(self, modification : str, ai_generated: bool):
-        pass
+    def __execute_mrtcor(self, modification : str, ai_generated: bool):
+        objs = get_objects_in_scene(self.controller)
 
-    def __execute_mrtclbc(self, modification : str, ai_generated: bool):
-        pass
+        try:
+            modification = int(modification)
+
+            if modification <= 0 or modification > len(objs):
+                raise ValueError
+
+            modification -= 1
+        except ValueError:
+            raise ex.MetamorphicRelationException("The modification inserted was not allowed") from None
+        
+        if remove_object_from_scene(self.controller, get_object_id(objs[modification])):
+            return self.original_reelay, self.original_requirement
+        else:
+            raise ex.MetamorphicRelationException(f"There was an error in removing object {objs[modification]}")
+
+    def __execute_mrtclbc(self, modification: str, ai_generated: bool):
+        modification = [m.strip() for m in modification.strip().split(",")]
+
+        try:
+            modification[0] = float(modification[0])
+            modification[1] = float(modification[1])
+
+            if change_brightness(self.controller, modification[0], modification[1]):
+                return self.original_reelay, self.original_requirement
+            else:
+                raise ValueError
+        except:
+            raise ex.MetamorphicRelationException(f"There was an error in changing brightness to the enironment")     
 
     def __execute_mrtvnti(self, modification : str, ai_generated: bool):
-        pass
+        return self.original_reelay, self.original_requirement
 
     def __execute_mrtvtr(self, modification : str, ai_generated: bool):
-        pass
+        return self.original_reelay, self.original_requirement
 
     def __execute_mrtvsv(self, modification : str, ai_generated : bool):
         new_rye = self.step_variation_rye_modification(modification)
