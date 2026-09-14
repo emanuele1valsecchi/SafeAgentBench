@@ -2,6 +2,7 @@
 
 from ai2thor.controller import Controller
 import ai2_thor_task as task
+from ai2_thor_task import ACTIONS
 import numpy as np
 from scipy import spatial
 import math
@@ -43,6 +44,23 @@ def create_controller(agentMode = "default",
         height=height,
         fieldOfView=fieldOfView
     )
+
+# === ENVIRONMENT MODIFICATION ===
+def change_brightness(controller : Controller, min : float, max : float):
+    controller.step(
+        action="RandomizeLighting",
+        brightness=(min, max),
+        randomizeColor=True,
+        hue=(0, 1),
+        saturation=(0.5, 1),
+        synchronized=False
+    )
+
+    if last_action_state(controller):
+        controller.step(action = "Done")
+        return True
+
+    return False
 
 # === UTILS ===
 
@@ -576,56 +594,52 @@ def get_object_position(controller : Controller, object : dict[str, str]):
     object = get_object_by_id(controller, get_object_id(object))
 
     return object['position']['x'], object['position']['y'], object['position']['z']
+
+def remove_object_from_scene(controller : Controller, object_id : str):
+    controller.step(
+        action="DisableObject",
+        objectId=object_id
+    )
+
+    if last_action_state(controller):
+        controller.step(action="Done")
+        return True
+
+    return False
+
 # === TASK EXECUTION ===
 
 def decode_step(controller : Controller, step : str):
     action = task.get_action_from_cmd( step )
 
-    if not task.is_action(action):
+    if not ACTIONS.is_action(action):
         raise ex.BadActionFormat(f"Action '{action}' was not recognized by the agent")
 
-    target_id = task.get_subjects_from_cmd( step )
+    action = ACTIONS(action)
 
-    match action:
-        case task.DROP | task.THROW | task.MOVEHELDBACK | task.MOVEHELDLEFT | task.MOVEHELDRIGHT | task.MOVEHELDUP | task.MOVEHELDDOWN | task.POUR:
-            if target_id:
-                raise ex.BadActionFormat(f"Action '{action}' should not contain a target")
+    targets_id = task.get_subjects_from_cmd( step )
 
-            return action, None, None
+    if len(targets_id) != action.objects_required:
+        raise ex.BadActionFormat(f"Action '{action}' requires exactly {action.objects_required} target(s), \
+                                 but {len(targets_id)} were provided")
 
-        case task.FIND | task.PICK | task.PUT | task.PUSH | task.PULL | task.OPEN | task.CLOSE | task.BREAK | task.COOK | task.SLICE | task.TURNON | task.TURNOFF | task.DIRTY | task.CLEAN | task.EMPTYLIQUID:
-            if ((not target_id) or (len(target_id) > 1)):
-                raise ex.BadActionFormat(f"Action '{action}' should contain a single target")
-            else:
-                target_id = target_id[0]
-                
-            obj = get_object_by_id(controller, target_id)
+    if action.objects_required == 0:
+        return action, None, None
 
-            if not obj:
-                raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
+    obj = get_object_by_id(controller, targets_id[0])
 
-            return action, obj, None
+    if not obj:
+        raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
 
-        case task.FILLLIQUID:
-            if (not target_id) or (len(target_id) != 2):
-                raise ex.BadActionFormat(f"Action '{action}' should contain two targets")
+    liquid = None
+    if action.objects_required == 2:
+        liquid = targets_id[1].lower()
+        if not task.LIQUID.is_liquid(liquid):
+            raise ex.BadActionFormat(
+                f"The liquid '{liquid}' is not allowed, available liquids are: {task.LIQUID.get_all()}"
+            )
 
-            obj =  get_object_by_id(controller, target_id[0])
-
-            liquid = target_id[1].lower()
-
-            if not obj:
-                raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
-
-            if not liquid:
-                raise ex.BadActionFormat(f"To perform '{action}' a valid liquid must be specified")
-            elif not task.is_liquid(liquid):
-                raise ex.BadActionFormat(f"The liquid '{liquid}' is not allowed, only available liquid are {task.get_available_liquids()}")
-
-            return action, obj, liquid
-
-        case _:
-            return None, None, None
+    return action, obj, liquid
 
 def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None, rye_manager : rye.RyeManager = None) -> tuple[bool, list[str]]:
     """Execute the plan in the Ai2Thor environment
@@ -646,126 +660,126 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
         print(f"-> {step_command}")
         
         match action:
-            case task.FIND:
+            case ACTIONS.FIND:
                 reach_object(controller, obj)
                 if rye_manager:
                     rye_manager.encode_empty_action()
 
-            case task.PICK:
+            case ACTIONS.PICK:
                 pick_up_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_pick(get_object_type(obj).lower(), get_object_parent_receptacles_type(controller, obj).lower())
 
-            case task.PUT:
+            case ACTIONS.PUT:
                 holded_object_type = get_object_type(get_agent_holded_object(controller))
                 put_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_put(holded_object_type.lower(), get_object_type(obj).lower())
 
-            case task.DROP:
+            case ACTIONS.DROP:
                 held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 drop_object(controller)
                 if rye_manager : 
                     rye_manager.encode_drop(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
 
-            case task.THROW:
+            case ACTIONS.THROW:
                 held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 throw_object(controller)
                 if rye_manager : 
                     rye_manager.encode_throw(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
 
-            case task.MOVEHELDBACK:
+            case ACTIONS.MOVEHELDBACK:
                 move_held_object_back(controller)
                 if rye_manager : 
                     rye_manager.encode_moveheldback()
 
-            case task.MOVEHELDLEFT:
+            case ACTIONS.MOVEHELDLEFT:
                 move_held_object_left(controller)
                 if rye_manager : 
                     rye_manager.encode_moveheldleft()
 
-            case task.MOVEHELDRIGHT:
+            case ACTIONS.MOVEHELDRIGHT:
                 move_held_object_right(controller)
                 if rye_manager : 
                     rye_manager.encode_moveheldright()
 
-            case task.MOVEHELDUP:
+            case ACTIONS.MOVEHELDUP:
                 move_held_object_up(controller)
                 if rye_manager : 
                     rye_manager.encode_moveheldup()
 
-            case task.MOVEHELDDOWN:
+            case ACTIONS.MOVEHELDDOWN:
                 move_held_object_down(controller)
                 if rye_manager : 
                     rye_manager.encode_moveheldown()
 
-            case task.POUR:
+            case ACTIONS.POUR:
                 held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
                 rotate_held_object(controller)
                 if rye_manager : 
                     rye_manager.encode_pour(get_object_type(held_object).lower(), get_liquid_inside(held_object).lower())
 
-            case task.PUSH:
+            case ACTIONS.PUSH:
                 directional_push_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_push(get_object_type(obj))
 
-            case task.PULL:
+            case ACTIONS.PULL:
                 direction_pull_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_pull(get_object_type(obj))
 
-            case task.OPEN:
+            case ACTIONS.OPEN:
                 open_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_open(get_object_type(obj))
 
-            case task.CLOSE:
+            case ACTIONS.CLOSE:
                 close_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_close(get_object_type(obj))
 
-            case task.BREAK:
+            case ACTIONS.BREAK:
                 break_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_break(get_object_type(obj))
 
-            case task.COOK:
+            case ACTIONS.COOK:
                 cook_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_cook(get_object_type(obj))
 
-            case task.SLICE:
+            case ACTIONS.SLICE:
                 slice_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_slice(get_object_type(obj))
 
-            case task.TURNON:
+            case ACTIONS.TURNON:
                 toggle_object_on(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_turnon(get_object_type(obj))
 
-            case task.TURNOFF:
+            case ACTIONS.TURNOFF:
                 toggle_object_off(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_turnoff(get_object_type(obj))
 
-            case task.DIRTY:
+            case ACTIONS.DIRTY:
                 dirty_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_dirty(get_object_type(obj))
 
-            case task.CLEAN:
+            case ACTIONS.CLEAN:
                 clean_object(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_clean(get_object_type(obj))
 
-            case task.FILLLIQUID:
+            case ACTIONS.FILLLIQUID:
                 fill_object_with_liquid(controller, obj, liquid)
                 if rye_manager : 
                     rye_manager.encode_fillliquid(get_object_type(obj), liquid)
 
-            case task.EMPTYLIQUID:
+            case ACTIONS.EMPTYLIQUID:
                 empty_object_from_liquid(controller, obj)
                 if rye_manager : 
                     rye_manager.encode_emptyliquid(get_object_type(obj), get_liquid_inside(obj))
@@ -774,7 +788,7 @@ def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.ai
                 raise ex.BadActionFormat(f"Action '{action}' not allowed")
 
         if ai_manager:
-            ai_manager.update_performed_sctions(step_command)
+            ai_manager.update_performed_actions(step_command)
 
             if (i != (len(plan) - 1)):
                 new_plan = ai_manager.update_plan(plan, (i + 1), get_objects_in_scene(controller))
@@ -998,20 +1012,22 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
             excluded_receptacle_ids.add(get_object_id(parent_receptacle))
 
     # If the object as an inherited object, try to put the object in the inherited
-    inherited_receptacle = get_inherited_objects(controller, receptacle)
+    inherited_receptacles = get_inherited_objects(controller, receptacle)
 
-    if inherited_receptacle:
-        try:
-            excluded_receptacle_ids.add(get_object_id(receptacle))
+    if inherited_receptacles:
 
-            put_object(controller, inherited_receptacle, excluded_receptacle_ids)
+        for inh_rcpt in inherited_receptacles:
+            try:
+                excluded_receptacle_ids.add(get_object_id(receptacle))
 
-            if right_receptacle_or_pickup(controller, inventory_object, inherited_receptacle):
-                return
-        except:
-            pass
-        finally:
-            excluded_receptacle_ids.add(get_object_id(parent_receptacle))
+                put_object(controller, inh_rcpt, excluded_receptacle_ids)
+
+                if right_receptacle_or_pickup(controller, inventory_object, inh_rcpt):
+                    return
+            except:
+                pass
+            finally:
+                excluded_receptacle_ids.add(get_object_id(inh_rcpt))
 
     # Try to put the object in the center of the receptacle considering axisAlignedBoundingBox
     controller.step(
