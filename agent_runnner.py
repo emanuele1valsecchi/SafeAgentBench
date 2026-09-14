@@ -31,7 +31,7 @@ def print_scenario(*,
     if reelay_expression:
         print(f" Reelay Expression: {reelay_expression}")
 
-def load_pre_defined_setup() -> tuple[str | None, str | None, str | None, str | None, str | None]:
+def load_pre_defined_setup():
     """Load predefined scene and task from 'kitchen_tasks_and_constraints.jsonl'"""
 
     try:
@@ -183,7 +183,7 @@ def scan_ambient(controller, fake = True):
     else:
         return ai2thor_func.get_objects_in_scene(controller)
 
-def display_objects_in_scene():
+def display_objects_in_scene(objs : list[dict[str, str]]):
     if u.yn_question("Do you want to list all the object that are present in the environment?"):
         ai2thor_func.display_objects(objs, "objectType")
 
@@ -206,6 +206,103 @@ def define_task(*, instruction : str = "slice an apple",
         u.print_separator()
 
     return f"{instruction}. Requirement: {requirement}", [step.strip() for step in steps_ref.split(",") if step.strip()]
+
+def execute_rye_analysis(rye_manager : rye.RyeManager, reelay_expression : str):
+    rye_manager.save_to_json()
+    
+    u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis\n")
+
+    rye_manager.analysis(reelay_expression)
+
+    if not rye_manager.get_errors():
+        print(f"RYE '{reelay_expression}' is respected throught the execution\n")
+    else:
+        for e in rye_manager.get_errors():
+            print(e)
+
+    u.print_separator()
+
+def execute_generated_plan_evaluation(controller : ai2thor_func.Controller, ai_manager : ai_cmd.aiManager, rye_manager : rye.RyeManager):
+    print("Evaluating agent plan against reference...")
+
+    try:
+        response, retries, rye_error_count, effectiveness = ai_manager.evaluate_executed_plan(
+            environment_objects=controller.last_event.metadata['objects'],
+            rye_errors= rye_manager.get_errors() if (rye_manager) else None)
+        
+        print(f"Generated plan evaluation: {response}")
+        print(f"Retries used to evaluate: {retries}")
+        print(f"Errors in reelay expressions: {rye_error_count}")
+        print(f"Generated plan effectinveness: {effectiveness}")
+    except Exception as e:
+        print(e)
+
+    u.print_separator()
+
+def execute_mr_modification(
+        controller : ai2thor_func.Controller,
+        scene : str,
+        instruction : str, 
+        requirement : str,
+        reelay_expression : str,
+        req_template : str
+    ):
+    print("Which Metamorphic Relation do you want to apply?\n")
+    mr.show_mrs()
+
+    chosen_mr = None
+
+    while not chosen_mr:
+        chosen_mr = u.req_not_empty_value("Chosen metamorphic relation: ")
+
+        try:
+            chosen_mr = int(chosen_mr)
+
+            if chosen_mr < 1 or chosen_mr > len(mr.MR):
+                print("You can only select one of the available metamorphic relation")
+                raise ValueError()
+        except ValueError:
+            chosen_mr = None
+
+    mr_handler = mr.Handler(
+        controller= controller,
+        chosen_mr = chosen_mr,
+        original_reelay = reelay_expression,
+        original_requirement = requirement,
+        requirement_template = req_template
+    )
+
+    u.print_separator()
+
+    controller.reset(scene=chosen_scene)
+
+    print("\nResetting environment for the new Metamorphic Relation...\n")
+
+    u.print_separator()
+
+    modification = u.req_not_empty_value(question= mr_handler.question())
+
+    reelay_expression, requirement = mr_handler.apply_modification(
+        modification=modification
+    )
+
+    u.print_separator()
+
+    print("[Updated Scenario]")
+    print_scenario(
+        scene = scene,
+        instruction= instruction,
+        requirement= requirement,
+        reelay_expression= reelay_expression
+    )
+
+    u.wait_ui( 
+        end_message = "Press [Enter] to start the simulation with the updated scenario"
+    )
+
+    u.print_separator()
+
+    return reelay_expression, requirement
 
 # ==========================
 # Set to True to execute the normal behavior, to False for test purpose
@@ -249,7 +346,7 @@ while True:
     objs = scan_ambient(controller, fake = user_controlled)
 
     if user_controlled:
-        display_objects_in_scene()
+        display_objects_in_scene(objs)
 
     task, steps_ref = define_task(
         instruction = chosen_instruction,
@@ -307,88 +404,30 @@ while True:
     u.print_separator()
 
     if rye_testing and chosen_reelay_expression:
-        rye_manager.save_to_json()
-
-        u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis\n")
-
-        rye_manager.analysis(chosen_reelay_expression)
-
-        if not rye_manager.get_errors():
-            print(f"RYE '{chosen_reelay_expression}' is respected throught the execution\n")
-        else:
-            for e in rye_manager.get_errors():
-                print(e)
-
-        u.print_separator()
+        execute_rye_analysis(
+            rye_manager= rye_manager,
+            reelay_expression=chosen_reelay_expression
+        )
 
     if ref_evaluation:
-        print("Evaluating agent plan against reference...")
-
-        try:
-            response, retries, rye_error_count, effectiveness = ai_manager.evaluate_executed_plan(
-                environment_objects=controller.last_event.metadata['objects'],
-                rye_errors= rye_manager.get_errors() if (rye_manager) else None)
-            
-            print(f"Generated plan evaluation: {response}")
-            print(f"Retries used to evaluate: {retries}")
-            print(f"Errors in reelay expressions: {rye_error_count}")
-            print(f"Generated plan effectinveness: {effectiveness}")
-        except Exception as e:
-            print(e)
-
-        u.print_separator()
+        execute_generated_plan_evaluation(
+            controller = controller,
+            ai_manager = ai_manager,
+            rye_manager = rye_manager
+        )
 
     if mr_application:
 
         if not u.yn_question("Do you want to apply any Metamorphic Relation?"):
             break
-
-        print("Which Metamorphic Relation do you want to apply?\n")
-        mr.show_mrs()
-
-        chosen_mr = None
-
-        while not chosen_mr:
-            chosen_mr = u.req_not_empty_value("Chosen metamorphic relation: ")
-
-            try:
-                chosen_mr = int(chosen_mr)
-
-                if chosen_mr < 1 or chosen_mr > len(mr.MR):
-                    print("You can only select one of the available metamorphic relation")
-                    raise ValueError()
-            except ValueError:
-                chosen_mr = None
-
-        mr_handler = mr.Handler(
-            chosen_mr = chosen_mr,
-            original_reelay= chosen_reelay_expression,
-            original_requirement=chosen_requirement,
-            requirement_template= chosen_req_template
-        )
-
-        u.print_separator()
-
-        modification = u.req_not_empty_value(question= mr_handler.question())
-
-        chosen_reelay_expression, chosen_requirement = mr_handler.apply_modification(
-            modification=modification)
-
-        u.print_separator()
-
-        print("[Updated Scenario]")
-        print_scenario(
+        
+        chosen_reelay_expression, chosen_requirement = execute_mr_modification(
+            controller= controller,
             scene = chosen_scene,
-            instruction= chosen_instruction,
-            requirement= chosen_requirement,
-            reelay_expression= chosen_reelay_expression
-        )
-
-        controller.reset(scene=chosen_scene)
-
-        u.wait_ui( 
-            text = "\nResetting environment for the new Metamorphic Relation...",
-            end_message = "Press [Enter] to start the simulation with the updated scenario"
+            instruction = chosen_instruction,
+            requirement = chosen_requirement,
+            reelay_expression = chosen_reelay_expression,
+            req_template = chosen_req_template
         )
 
         ref_evaluation = False
