@@ -136,21 +136,13 @@ def display_available_scenes(num_columns = 3):
 
     for category, scene_list in scenes.items():
         print(f"{category}:")
-        num_scenes = len(scene_list)
 
-        # Calculate how many rows are needed to fit the scenes into `num_columns`
-        num_rows = (num_scenes + num_columns - 1) // num_columns
-        
-        for i in range(num_rows):
-            row_items = []
-            
-            for col_index in range(i, num_scenes, num_rows):
-                
-                row_items.append(f"- {scene_list[col_index]:<14}")
-            
-            if row_items:
-                print("  " + "  ".join(row_items))
-        print()
+        formatted = u.format_column_content(
+            content=scene_list,
+            column= num_columns
+        )
+
+        print(formatted)
     
     u.print_separator()
 
