@@ -62,6 +62,31 @@ def change_brightness(controller : Controller, min : float, max : float):
 
     return False
 
+def move_object_at(controller : Controller, object_id : str, receptacle_id : str):
+
+    moving_obj = get_object_by_id(controller, object_id)
+
+    if not moving_obj['pickupable'] and not moving_obj['moveable']:
+        raise ex.BadActionFormat(f"{get_object_type(moving_obj)} cannot be moved on the desired receptacle")
+
+    positions = get_position_above_object(controller, receptacle_id)
+    
+    if not positions:
+        return False
+
+    for pos in positions:
+        controller.step(
+            action="PlaceObjectAtPoint",
+            objectId=object_id,
+            position= pos
+        )
+
+        if last_action_state(controller):
+            controller.step(action = "Done")
+            return True
+
+    return False
+
 # === UTILS ===
 
 def last_action_state(controller : Controller):
@@ -607,6 +632,15 @@ def remove_object_from_scene(controller : Controller, object_id : str):
 
     return False
 
+def get_position_above_object(controller : Controller, object_id : str):
+    controller.step(
+            action="GetSpawnCoordinatesAboveReceptacle",
+            objectId=object_id,
+            anywhere=True
+        )
+    
+    return controller.last_event.metadata['actionReturn']
+
 # === TASK EXECUTION ===
 
 def decode_step(controller : Controller, step : str):
@@ -958,13 +992,7 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
         return
 
     # Try to put the object over the receptacle centroid if the default action has not been executed successfully
-    controller.step(
-        action="GetSpawnCoordinatesAboveReceptacle",
-        objectId=get_object_id(receptacle),
-        anywhere=True
-    )
-
-    position_above = controller.last_event.metadata['actionReturn']
+    position_above = get_position_above_object(controller, get_object_id(receptacle))
 
     # Trying the centroid above the receptacle
     if position_above:
