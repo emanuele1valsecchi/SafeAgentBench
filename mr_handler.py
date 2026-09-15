@@ -8,6 +8,8 @@ from ai2_thor_functionalities import get_objects_in_scene
 from ai2_thor_functionalities import remove_object_from_scene
 from ai2_thor_functionalities import get_object_id
 from ai2_thor_functionalities import change_brightness
+from ai2_thor_functionalities import move_object_at
+from utils import format_column_content
 
 def print_mrs(mrs : MR, offset : int = 1):
     for i, mr in enumerate(mrs):
@@ -34,7 +36,7 @@ class MR(Enum):
               \n - The format to respect is 'min, max'\
               \n Values:")
     TV_NTI = (4, "Negation or Task Inversion", "")
-    TV_TR  = (5, "Target object Relocation", "")
+    TV_TR  = (5, "Target object Relocation", "Movable objects:\n{moving_objs}\n\n Receptacles:\n {receptacles}\n\nObject to move, Receptacle:")
     TV_SV  = (6, "Step number Variation", "Insert the new step number in within the action should be performed:")
 
     def __new__(cls, value: int, description: str, question : str):
@@ -114,28 +116,43 @@ class Handler():
             case MR.TV_NTI:
                 pass
             case MR.TV_TR:
-                pass
+                return self.tv_tr_question_construction(question  = qst)
             case _: #MR.TV_SV
                 return qst
 
     def tc_or_question_construction(self, question : str):
-        objs = get_objects_in_scene(controller = self.controller) 
+        objs_types = [get_object_type(obj) for obj in get_objects_in_scene(controller = self.controller)]
 
-        num_rows = (len(objs) + 3 - 1) // 3
-
-        objs_formatted = ""
-        
-        for i in range(num_rows):
-            row_items = []
-            
-            for col_index in range(i, len(objs), num_rows):
-                
-                row_items.append(f"({col_index + 1}) {get_object_type(objs[col_index]):<14}")
-            
-            if row_items:
-                objs_formatted += "  " + "  ".join(row_items) + "\n"
+        objs_formatted = format_column_content(
+            content= objs_types,
+            numbers= True
+        )
 
         return question.format(objs = objs_formatted)
+
+    def __get_tv_tr_elements(self, type = True):
+        pickable_objs = [get_object_type(obj) if type else obj for obj in get_objects_in_scene(controller = self.controller, pickupable = True)]
+        movable_objs = [get_object_type(obj) if type else obj for obj in get_objects_in_scene(controller = self.controller, moveable = True)]
+
+        seen = set()
+        if type:
+            moving_objs = [obj for obj in pickable_objs + movable_objs if obj not in seen and not seen.add(obj)]
+        else:
+            moving_objs = [obj for obj in pickable_objs + movable_objs if get_object_type(obj) not in seen and not seen.add(get_object_type(obj))]
+
+        receptacles = [get_object_type(r) if type else r for r in get_objects_in_scene(controller= self.controller, receptacle = True)]
+
+        return moving_objs, receptacles
+
+    def tv_tr_question_construction(self, question : str):
+        moving_objs, receptacles = self.__get_tv_tr_elements()
+
+        moving_objs = format_column_content(content = moving_objs, numbers=True)
+
+        receptacles = format_column_content(content= receptacles, numbers= True)
+
+        return question.format(moving_objs = moving_objs, receptacles = receptacles)
+
 
     def apply_modification(self, *,
                 modification : str, 
@@ -212,7 +229,28 @@ class Handler():
         return self.original_reelay, self.original_requirement
 
     def __execute_mrtvtr(self, modification : str, ai_generated: bool):
-        return self.original_reelay, self.original_requirement
+        moving_objs, receptacles = self.__get_tv_tr_elements(type = False)
+
+        modification = [m.strip() for m in modification.strip().split(",")]
+
+        try:
+            modification[0] = int(modification[0]) - 1
+            modification[1] = int(modification[1]) - 1
+
+            if modification[0] < 0 or modification[0] >= len(moving_objs):
+                raise ValueError
+
+            if modification[1] < 0 or modification[1] >= len(receptacles):
+                raise ValueError
+
+            if move_object_at(self.controller, 
+                    get_object_id(moving_objs[modification[0]]), 
+                    get_object_id(receptacles[modification[1]])):
+                return self.original_reelay, self.original_requirement
+            else:
+                raise ValueError
+        except:
+            raise ex.MetamorphicRelationException(f"There was an error in moving the object to the desired location") from None
 
     def __execute_mrtvsv(self, modification : str, ai_generated : bool):
         new_rye = self.step_variation_rye_modification(modification)
