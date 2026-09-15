@@ -10,13 +10,12 @@
     },
     {},
     {
-        "mug_in_hand": "true",
-        "mug_in_countertop": "false"
-    },
-    {},
-    {
         "empty_mug": "false",
         "mug_filled_with_coffee": "true"
+    },
+    {
+        "mug_in_hand": "true",
+        "mug_in_countertop": "false"
     },
     {},
     {
