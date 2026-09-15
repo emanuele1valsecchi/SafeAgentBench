@@ -1,3 +1,28 @@
+def format_column_content(*, 
+        content : list[str], 
+        column : int = 3,
+        numbers = False
+    ):
+    content_len = len(content)
+
+    num_rows = (content_len + column - 1) // column
+    
+    content_formatted = ""
+    
+    for i in range(num_rows):
+        row_items = []
+        
+        for col_index in range(i, content_len, num_rows):
+            if numbers:
+                row_items.append(f"({col_index + 1}) {content[col_index]:<18}")
+            else:
+                row_items.append(f"- {content[col_index]:<18}")
+        
+        if row_items:
+            content_formatted += "  " + "  ".join(row_items) + "\n"
+
+    return content_formatted
+
 def print_separator(char_numb = 60):
     print("\n" + "=" * char_numb + "\n")
 
