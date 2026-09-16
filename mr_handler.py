@@ -44,7 +44,7 @@ TC_LBC_QUESTION = "Insert the bounds with which a light's intensity may be multi
     \n - The format to respect is 'min, max'\
     \n Values:"
 
-TV_NTI_QUESTION = ""
+TV_NTI_QUESTION = "The following actions will be inverted in the requirement:\n{inverted_actions}\nPress [Enter] to continue: "
 
 TV_TR_QUESTION = "Movable objects:\n{moving_objs}\n\n Receptacles:\n {receptacles}\n\nObject to move, Receptacle:"
 
@@ -81,13 +81,14 @@ class MR(Enum):
 
 class Handler():
     def __init__(self, *,
-                controller : Controller,
-                chosen_mr : MR | int,
-                original_reelay : str,
-                original_requirement : str,
-                requirement_template : str = None,
-                default_x : str,
-                synonym_map : dict[str, str]
+            controller : Controller,
+            chosen_mr : MR | int,
+            original_reelay : str,
+            original_requirement : str,
+            requirement_template : str = None,
+            default_x : str,
+            thesaurus_map : dict[str, str],
+            inverted_reelay : str
         ):
         self.controller = controller
         self.chosen_mr = None
@@ -96,7 +97,9 @@ class Handler():
         self.original_requirement = original_requirement
         self.requirement_template = requirement_template
         self.default_x = default_x
-        self.synonym_map = synonym_map if synonym_map else {}
+        self.thesaurus_map = thesaurus_map if thesaurus_map else {}
+        self.inverted_reelay = inverted_reelay
+        self.invertible_keys = []
 
     def __set_mr(self, *,
                chosen_mr : MR | int = None):
@@ -147,9 +150,14 @@ class Handler():
         if not self.default_x:
             raise ex.MetamorphicRelationException(text) from None
 
-    def __check_synonym_map(self,
-            text : str = "Cannot apply modification since the synonym map was not set for this scenario"):
-        if not self.synonym_map:
+    def __check_thesaurus_map(self,
+            text : str = "Cannot apply modification since the thesaurus was not set for this scenario"):
+        if not self.thesaurus_map:
+            raise ex.MetamorphicRelationException(text) from None
+
+    def __check_inverted_reelay(self,
+            text : str = "Cannot apply modification since the inverted reelay is not available for this scenario"):
+        if not self.inverted_reelay:
             raise ex.MetamorphicRelationException(text) from None
 
     def __check_parameters(self, *,
@@ -159,7 +167,8 @@ class Handler():
             original_requirement_check : bool = True,
             requirement_template_check : bool = False,
             default_x_check : bool = False,
-            synonym_map_check : bool = False):
+            thesaurus_map_check : bool = False,
+            inverted_reelay_check : bool = False):
         if controller_check:
             self.__check_controller()
 
@@ -178,8 +187,11 @@ class Handler():
         if default_x_check:
             self.__check_default_x()
 
-        if synonym_map_check:
-            self.__check_synonym_map()
+        if thesaurus_map_check:
+            self.__check_thesaurus_map()
+
+        if inverted_reelay_check:
+            self.__check_inverted_reelay()
 
     def question(self) -> str:
         self.__check_mr()
@@ -187,15 +199,15 @@ class Handler():
 
         match self.chosen_mr:
             case MR.TC_SS:
-                return self.tc_ss_question_construction(question = qst)
+                return self.__tc_ss_question_construction(question = qst)
             case MR.TC_OR:
-                return self.tc_or_question_construction(question = qst)
+                return self.__tc_or_question_construction(question = qst)
             case MR.TC_LBC:
                 return qst
             case MR.TV_NTI:
-                pass
+                return self.__tv_nti_question_construction(question = qst)
             case MR.TV_TR:
-                return self.tv_tr_question_construction(question  = qst)
+                return self.__tv_tr_question_construction(question  = qst)
             case _: #MR.TV_SV
                 return qst
 
@@ -203,6 +215,9 @@ class Handler():
                 modification : str, 
                 ai_generated : bool = False):
         self.__check_mr()
+
+        if self.chosen_mr != MR.TV_NTI and not modification:
+            raise ex.MetamorphicRelationException("The modification inserted is not allowed")
         
         match self.chosen_mr:
             case MR.TC_SS:
@@ -231,24 +246,24 @@ class Handler():
 
         self.requirement_template = self.requirement_template.replace("{X}", x)
 
-    def __synonyms_modification(self, synonyms : dict[str, str] = None):
+    def __thesaurus_modification(self, thesaurus : dict[str, str] = None):
         self.__check_requirement_template()
         
-        if not synonyms:
-            self.__check_synonym_map()
-            synonyms = self.synonym_map
+        if not thesaurus:
+            self.__check_thesaurus_map()
+            thesaurus = self.thesaurus_map
 
-        for t_key, t_data in synonyms.items():
+        for t_key, t_data in thesaurus.items():
             self.requirement_template = self.requirement_template.replace(f"{{{t_key}}}", t_data['default'])
 
     # === Synonym Substitution === #
-    def tc_ss_question_construction(self, question : str):
+    def __tc_ss_question_construction(self, question : str):
         self.__x_modification()
 
-        self.__check_synonym_map()
+        self.__check_thesaurus_map()
 
         synonyms_display = ""
-        for t_key, t_data in self.synonym_map.items():
+        for t_key, t_data in self.thesaurus_map.items():
             formatted_syns = format_column_content(content=t_data['synonyms'], numbers=True)
             synonyms_display += f"Available synonyms for '{t_key}':\n{formatted_syns}\n"
 
@@ -261,18 +276,18 @@ class Handler():
         self.__check_parameters(
             requirement_template_check = True,
             default_x_check = True,
-            synonym_map_check = True
+            thesaurus_map_check = True
         )
 
         modification = [m.strip() for m in modification.strip().split(",")]
 
-        if len(modification) != len(self.synonym_map):
-            raise ex.MetamorphicRelationException(f"Expected {len(self.synonym_map)} inputs, but got {len(modification)}.")
+        if len(modification) != len(self.thesaurus_map):
+            raise ex.MetamorphicRelationException(f"Expected {len(self.thesaurus_map)} inputs, but got {len(modification)}.")
 
         new_req = self.requirement_template
 
         try:
-            for (t_key, t_data), mod_input in zip(self.synonym_map.items(), modification):
+            for (t_key, t_data), mod_input in zip(self.thesaurus_map.items(), modification):
                 mod_idx = int(mod_input) - 1
                 
                 if mod_idx < 0 or mod_idx >= len(t_data['synonyms']):
@@ -286,7 +301,7 @@ class Handler():
         return self.original_reelay, new_req
     
     # === Object Removal === #
-    def tc_or_question_construction(self, question : str):
+    def __tc_or_question_construction(self, question : str):
         self.__check_controller()
 
         objs_types = [get_object_type(obj) for obj in get_objects_in_scene(controller = self.controller)]
@@ -336,13 +351,42 @@ class Handler():
             raise ex.MetamorphicRelationException(f"There was an error in changing brightness to the enironment")     
 
     # === Negation or Task Inversion === #
-    def __execute_mrtvnti(self, modification : str, ai_generated: bool):
-        self.__check_parameters()
+    def __tv_nti_question_construction(self, question : str):
+        self.__check_thesaurus_map()
 
-        return self.original_reelay, self.original_requirement
+        inverted_actions = ""
+        self.invertible_keys = []
+
+        for t_key, t_data in self.thesaurus_map.items():
+            if 'inversion' in t_data:
+                self.invertible_keys.append(t_key)
+                inverted_actions += f" - Inverting '{t_data['default']}' -> '{t_data['inversion']}'\n"
+
+        return question.format(
+            inverted_actions = inverted_actions
+        )
+
+    def __execute_mrtvnti(self, modification : str, ai_generated: bool):
+        self.__check_parameters(
+            controller_check = False,
+            original_reelay_check = False,
+            requirement_template_check = True,
+            default_x_check = True,
+            inverted_reelay_check = True
+        )
+
+        self.__x_modification()
+
+        for t_key, t_data in self.thesaurus_map.items():
+            if t_key in self.invertible_keys:
+                self.requirement_template = self.requirement_template.replace(f"{{{t_key}}}", t_data['inversion'])
+            else:
+                self.requirement_template = self.requirement_template.replace(f"{{{t_key}}}", t_data['default'])
+
+        return self.inverted_reelay, self.requirement_template
 
     # === Target object Relocation === #
-    def tv_tr_question_construction(self, question : str):
+    def __tv_tr_question_construction(self, question : str):
             moving_objs, receptacles = self.__get_tv_tr_elements()
     
             moving_objs = format_column_content(content = moving_objs, numbers=True)
@@ -395,7 +439,7 @@ class Handler():
     def __execute_mrtvsv(self, modification : str, ai_generated : bool):
         self.__check_parameters(
             requirement_template_check = True,
-            synonym_map_check = True
+            thesaurus_map_check = True
         )
 
         new_rye = self.step_variation_rye_modification(modification)
@@ -405,7 +449,7 @@ class Handler():
         else:
             self.__x_modification(str(modification))
 
-            self.__synonyms_modification()
+            self.__thesaurus_modification()
 
             new_req = self.requirement_template
             
