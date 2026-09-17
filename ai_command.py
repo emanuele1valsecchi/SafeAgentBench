@@ -298,7 +298,7 @@ Example:
             self.initial_prompt += f"""
         The objects available in the actual environment to execute the plan are: 
         {environment_objects}
-        The generate plan use the 'objectId' to specify the object to intercat with and not its name or objectType
+        The generate plan use the 'objectId' to specify the object to intercat with and NOT its 'name' or 'objectType'
         
         Note: the objects available in the environment are the actual objects that you can use to generate the plan, while the ones contained in the existing objects list should only be considered as a reference to know all the properties of an object
         """
