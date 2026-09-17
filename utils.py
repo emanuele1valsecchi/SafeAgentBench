@@ -55,13 +55,13 @@ def req_not_empty_value(question: str, error_message: str="The value inserted is
 
     return d
 
-def wait_ui(text : str = "", end_message: str = "Press enter to continue"):
+def wait_ui(text : str = "", end_message: str = "Press [Enter] to continue"):
     """Wait for user input: wait for enter key pressed by the user"""
     if end_message:
         input (f"{text}\n{end_message}")
     else:
         input(f"{text}")
 
-def quit_program(text : str = "", end_message: str = "Press enter to close the program"):
+def quit_program(text : str = "", end_message: str = "Press [Enter] to close the program"):
     wait_ui(text, end_message)
     quit()
