@@ -250,10 +250,6 @@ def get_object_closest_position(controller: Controller, target : dict[str, str],
         return None, None, None
     
     target_pos = target['position'] # dict
-
-    if is_object_close(target): # Agent is already close to the object
-        return None, None, None
-
     clos_pos = get_closest_reachable_position(agent_rpos, target_pos, nth)
     
     # Evaluate desired rotation angle (see https://github.com/allenai/ai2thor/issues/806)
@@ -601,6 +597,9 @@ def is_right_receptacle(controller : Controller, inventory_object : dict[str, st
 
 def right_receptacle_or_pickup(controller : Controller, inventory_object : dict[str, str], receptacle : dict[str, str]) -> bool:
     if last_action_state(controller):
+        for _ in range(MAX_ATTEMPTS):
+            controller.step(action="Done")
+
         if is_right_receptacle(controller, inventory_object, receptacle):
             controller.step(
                 action = "Done"
@@ -612,6 +611,30 @@ def right_receptacle_or_pickup(controller : Controller, inventory_object : dict[
                 objectId = get_object_id(inventory_object),
                 forceAction = True
             )
+
+    return False
+
+def try_place_at_point(controller : Controller, position_above : dict[str, str], inventory_object : dict[str, str], receptacle : dict[str, str]):
+    if get_agent_inventory(controller):
+        controller.step(action="DropHandObject", forceAction=True)
+
+    safe_position = position_above
+
+    for _ in range(MAX_ATTEMPTS):
+        controller.step(
+            action="PlaceObjectAtPoint",
+            objectId=get_object_id(inventory_object),
+            position=safe_position
+        )
+
+        if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+            return True
+
+        safe_position = {
+            'x' : safe_position['x'],
+            'y' : safe_position['y'] + 0.02,
+            'z' : safe_position['z']
+        }
 
     return False
 
@@ -1002,24 +1025,12 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
             "z": sum([tmp['z'] for tmp in position_above])/len(position_above)
         }
 
-        controller.step(
-            action="PlaceObjectAtPoint",
-            objectId=get_object_id(inventory_object),
-            position = centroid
-        )
-
-        if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+        if try_place_at_point(controller, centroid, inventory_object, receptacle):
             return
 
         #Try all the position above the receptacle
         for pos in position_above:
-            controller.step(
-                action="PlaceObjectAtPoint",
-                objectId=get_object_id(inventory_object),
-                position = pos
-            )
-
-            if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+            if try_place_at_point(controller, pos, inventory_object, receptacle):
                 return
 
 
@@ -1058,28 +1069,26 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
                 excluded_receptacle_ids.add(get_object_id(inh_rcpt))
 
     # Try to put the object in the center of the receptacle considering axisAlignedBoundingBox
-    controller.step(
-        action = "PlaceObjectAtPoint",
-        objectId=get_object_id(inventory_object),
-        position = receptacle['axisAlignedBoundingBox']['center']
-    )
-
-    if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+    if try_place_at_point(
+            controller = controller, 
+            position_above = receptacle['axisAlignedBoundingBox']['center'], 
+            inventory_object=inventory_object, 
+            receptacle=receptacle
+        ):
         return
 
     # Try to put the object at one of the receptacle corner points
     for corner_point in receptacle['axisAlignedBoundingBox']['cornerPoints']:
-        controller.step(
-                action = "PlaceObjectAtPoint",
-                objectId=get_object_id(inventory_object),
-                position = {
+        if try_place_at_point(
+                controller = controller, 
+                position_above = {
                     'x' : corner_point[0],
                     'y' : corner_point[1],
                     'z' : corner_point[2]
-                }
-            )
-
-        if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+                }, 
+                inventory_object=inventory_object, 
+                receptacle=receptacle
+            ):
             return
 
     # Receptacle is full, so another one of the same type is searched in the environment and the object is placed inside it (if possible)
@@ -1102,13 +1111,12 @@ def put_object(controller: Controller, receptacle: dict[str, str], excluded_rece
     # If all the other ways failed, trying to put the object inside by scanning all the position_aboce the receptacles
     if position_above:
         for pos in position_above:
-            controller.step(
-                action="PlaceObjectAtPoint",
-                objectId=get_object_id(inventory_object),
-                position=pos
-            )
-
-            if right_receptacle_or_pickup(controller, inventory_object, receptacle):
+            if try_place_at_point(
+                    controller = controller, 
+                    position_above = pos, 
+                    inventory_object=inventory_object, 
+                    receptacle=receptacle
+                ):
                 return
 
     raise ex.ReceptacleException(f"The object is not in {get_object_type(receptacle).lower()} due to simulation error")
@@ -1216,7 +1224,9 @@ def direction_pull_object(controller : Controller, object : dict[str, str]):
 def open_object(controller: Controller, object: dict):
     steps_num = 4
 
-    openness = 1.0 / steps_num
+    step_size = 1.0 / steps_num
+
+    current_openness = step_size
 
     if object['openable'] and object['openness'] < 1.0:
     
@@ -1224,27 +1234,29 @@ def open_object(controller: Controller, object: dict):
             controller.step(
                 action="OpenObject",
                 objectId=get_object_id(object),
-                openness = openness,
+                openness = current_openness,
                 forceAction=False
             )
     
             if not last_action_state(controller):    
                 for j in range(MAX_ATTEMPTS):
                     teleport_to_free_position(controller)
+
+                    look_at_object(controller, object)
     
                     controller.step(
                         action="OpenObject",
                         objectId=get_object_id(object),
                         openness = 1.0,
-                        forceAction=False
+                        forceAction= True if j == (MAX_ATTEMPTS - 1) else False 
                     )
     
                     if last_action_state(controller):
-                        break
+                        return
                 else:
                     raise ex.Ai2THORException(controller)
             
-            openness += openness
+            current_openness += step_size
 
     elif not object['openable']:
         raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
