@@ -103,7 +103,7 @@ def load_pre_defined_setup():
         except:
             print("The input is not valid, no pre defined use case will be loaded")
     else:
-        u.wait_ui(end_message = "Press enter to manually configure the use case")
+        u.wait_ui(end_message = "Press [Enter] to manually configure the use case")
 
         u.print_separator()
 
@@ -163,7 +163,7 @@ def display_available_scenes(num_columns = 3):
     u.print_separator()
 
 def choose_scene() -> str:
-    chosen_scene = input("Enter the scene name or number you want to load (or press Enter to use default 'FloorPlan1'): ").strip()
+    chosen_scene = input("Insert the scene name or number you want to load (or press [Enter] to use default 'FloorPlan1'): ").strip()
 
     try:
         chosen_scene = "FloorPlan" + str(int(chosen_scene))  # Try to convert to integer if it's a number
@@ -218,7 +218,7 @@ def define_task(*, instruction : str = "slice an apple",
 def execute_rye_analysis(rye_manager : rye.RyeManager, reelay_expression : str):
     rye_manager.save_to_json()
     
-    u.wait_ui("Simulation complete.", "Press Enter to execute the rye analysis\n")
+    u.wait_ui("Simulation complete.", "Press [Enter] to execute the rye analysis\n")
 
     rye_manager.analysis(reelay_expression)
 
@@ -402,7 +402,7 @@ while True:
     ai_steps = ai_manager.resilient_generation_plan()
 
     if not ai_steps :
-        u.wait_ui(f"Agent cannot generate an appropriate plan to execute '{task}'", "Press enter to exit")
+        u.wait_ui(f"Agent cannot generate an appropriate plan to execute '{task}'", "Press [Enter] to exit")
         quit()
 
     executed = False
@@ -426,7 +426,7 @@ while True:
             )
 
         except Exception as e:
-            u.wait_ui(text = e, end_message = "Press Enter to quit the program")
+            u.wait_ui(text = e, end_message = "Press [Enter] to quit the program")
             traceback.print_exc()
 
             controller.stop()
