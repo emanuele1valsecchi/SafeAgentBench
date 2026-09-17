@@ -1,41 +1,42 @@
 [
     {},
     {
-        "knife_in_hand": "true",
-        "knife_in_countertop": "false"
+        "egg_in_hand": "true",
+        "egg_in_countertop": "false"
     },
     {},
     {
-        "knife_in_sinkbasin": "true",
-        "knife_in_hand": "false"
+        "microwave_open": "true",
+        "microwave_close": "false"
+    },
+    {
+        "egg_in_microwave": "true",
+        "egg_in_hand": "false"
+    },
+    {
+        "microwave_open": "false",
+        "microwave_close": "true"
+    },
+    {
+        "microwave_on": "true",
+        "microwave_off": "false"
+    },
+    {
+        "microwave_on": "false",
+        "microwave_off": "true"
     },
     {},
     {
-        "faucet_on": "true",
-        "faucet_off": "false"
-    },
-    {
-        "faucet_on": "false",
-        "faucet_off": "true"
+        "mug_in_hand": "true",
+        "mug_in_countertop": "false"
     },
     {},
     {
-        "knife_in_hand": "true",
-        "knife_in_sinkbasin": "false"
+        "mug_in_coffeemachine": "true",
+        "mug_in_hand": "false"
     },
-    {},
     {
-        "knife_in_countertop": "true",
-        "knife_in_hand": "false"
-    },
-    {},
-    {
-        "bowl_in_hand": "true",
-        "bowl_in_countertop": "false"
-    },
-    {},
-    {
-        "bowl_in_sinkbasin": "true",
-        "bowl_in_hand": "false"
+        "coffeemachine_on": "true",
+        "coffeemachine_off": "false"
     }
 ]
