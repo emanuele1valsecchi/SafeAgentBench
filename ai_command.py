@@ -7,6 +7,7 @@ import time
 import json
 import ai2_thor_task as task
 import custom_exceptions as ex
+from utils import print_log
 
 def get_ai2_thor_objects() -> list :
     """
@@ -24,7 +25,7 @@ def get_ai2_thor_objects() -> list :
                 objs.append(json.loads(line))
     
     except FileNotFoundError:
-        print(f"Warning: {objs_file} not found. Please ensure the file exists in the specified path.")
+        print_log(f"Warning: {objs_file} not found. Please ensure the file exists in the specified path.")
         quit()
 
     return objs
@@ -364,14 +365,14 @@ Example:
                             
                             return plan
                     except Exception as e:
-                        print(f"Failed to parse LLM output into a list. Error: {e}\nOutput was: {list_str}")
+                        print_log(f"Failed to parse LLM output into a list. Error: {e}\nOutput was: {list_str}")
                         return []
                 
-                print(f"Could not find a valid list in the LLM output.\nOutput was: {response}")
+                print_log(f"Could not find a valid list in the LLM output.\nOutput was: {response}")
                 return []
             
             except Exception as e:
-                print(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
+                print_log(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
                 
                 time.sleep(waiting_time)
 
@@ -395,12 +396,8 @@ Otherwise create a new plan considering the new objects and evironment state as 
     def update_performed_actions(self, action : str):
         self.aiEvaluator.add_step(action)
 
-    def evaluate_executed_plan(self, *,
-            environment_objects : list[dict],
-            rye_errors : list[str] = None):
-        return self.aiEvaluator.evaluate_plan(
-            environment_objects = environment_objects,
-            rye_errors = rye_errors)
+    def evaluate_executed_plan(self, environment_objects : list[dict]):
+        return self.aiEvaluator.evaluate_plan(environment_objects)
 
 class aiEvaluator():
     system_prompt = "You are an impartial judge"
@@ -431,36 +428,18 @@ class aiEvaluator():
     def get_performed_steps(self):
         return self.performed_steps
 
-    def __effectiveness_evaluation(self, 
-        response : str, 
-        rye_errors : list [str] = None):
-
-        if response != self.__SUCCESS_CODE:
-            return 0.0
-
-        std_eff = min(100.0 * (float(len(self.reference_steps)) / float(len(self.performed_steps))), 100.0)
-
-        rye_errors_num = len(rye_errors) if rye_errors else 0
-
-        rye_errors_factor = max(0.0, 1.0 - (rye_errors_num / len(self.performed_steps)))
-
-        return std_eff * rye_errors_factor
-
-        
-    def evaluate_plan(self, *,
-            environment_objects : list[dict],
-            rye_errors : list[str] = None):
+    def evaluate_plan(self, environment_objects : list[dict]):
         prompt = f"""You have to evaluate the quality of the planning results \
 provided by an AI robot for the following task: {self.task}.\n
 Assess whether the planning results are capable of completing the task and whether each step can be executed successfully considering \
 that all the objects in the scene are characterized by the following state: {environment_objects} 
-For each step's deasibility consider that the robot can only execute the following actions:  {self.allowed_actions}
+For each step's feasibility consider that the robot can only execute the following actions:  {self.allowed_actions}
 The plan was realized considering that the following rules have to be respected: {self.steps_rule}
 The reference planning steps to perform the task are {self.reference_steps}
 The AI robot generated plan is: {self.performed_steps}
 Your evaluation has to compare the robot's steps with the reference steps, the two can be different,\
 but the task and requirement should be respected in both cases.
-Remain as objective as possible.
+Remain as objective as possible and decide if the task is successful or failure based on the final state of the environment objects.
 The evaluation should NOT contain any type of explanation, instead it has to assign a rating to the planning results 
 from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this format: 'Rating: rating'"""
         
@@ -468,7 +447,7 @@ from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this 
         response = response.text.split()[-1].strip().lower()
 
         if response == self.__SUCCESS_CODE or response == self.__FAILURE_CODE:
-            return response, retries, len(rye_errors) if (rye_errors) else 0, self.__effectiveness_evaluation(response, rye_errors),
+            return response, retries
 
         raise ex.AIRequestException(f"{response}")
 
@@ -482,6 +461,8 @@ from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this 
 
         for model in self.models:
             retries = 0
+            waiting_time = 5
+
             while retries < self.max_retries:
                 try:
                     response = client.models.generate_content(
@@ -490,9 +471,11 @@ from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this 
                         config=config
                     )
                     return response, retries
+                
                 except Exception as e:
-                    print(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
-                    time.sleep(5)
+                    print_log(f"API Error/Rate limit reached: {e}. Retrying in a few seconds...")
+                    time.sleep(waiting_time)
+                    waiting_time *= 2
                     retries += 1
 
         raise Exception("Max retries reached, could not complete the request")
