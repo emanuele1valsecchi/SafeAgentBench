@@ -10,20 +10,21 @@ from ai2_thor_functionalities import get_object_id
 from ai2_thor_functionalities import change_brightness
 from ai2_thor_functionalities import move_object_at
 from utils import format_column_content
+from utils import print_log
 
 def print_mrs(mrs : MR, offset : int = 1):
     for i, mr in enumerate(mrs):
-        print(f" {i + offset}) {mr}")
+        print_log(f" {i + offset}) {mr}")
 
 def show_mrs(types = True):
     if not types:
         print_mrs(MR)
     else:
 
-        print("MR - Trajectory Consistency")
+        print_log("MR - Trajectory Consistency")
         print_mrs(MR.get_tc())
 
-        print("MR - Trajectory Variation")
+        print_log("MR - Trajectory Variation")
         print_mrs(MR.get_tv(), len(MR.get_tc()) + 1)
 
 TC_SS_QUESTION = "Given the requirement template:\n'{req_template}'\n\
@@ -473,7 +474,7 @@ class Handler():
             )
             return response.text.strip()
         except Exception as e:
-            print(f"Warning: Failed to rewrite requirement using AI: {e}")
+            print_log(f"Warning: Failed to rewrite requirement using AI: {e}")
             return self.original_requirement
 
     def step_variation_rye_modification(self, modification : str) -> str:
@@ -490,7 +491,7 @@ class Handler():
                 raise ValueError
 
             # re.split matches all H[a:b] or P[c:d]
-            parts = re.split(r'([HP])\[(\d+):(\d+)\]', self.original_reelay)
+            parts = re.split(r'([HP])\s*\[\s*(\d+)\s*:\s*(\d+)\s*\]', self.original_reelay)
 
             if len(parts) == 1:
                 return self.original_reelay
