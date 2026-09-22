@@ -1,11 +1,5 @@
 from enum import Enum
 
-def get_action_from_cmd( command : str ) -> str:
-    return command.strip().split(" ", 1)[0].lower().strip()
-
-def get_subjects_from_cmd( command : str ) -> tuple[str, ...]:
-    return [subject for subject in command.split()[1:]]
-
 class LIQUID(Enum):
     COFFEE = "coffee"
     WINE = "wine"
@@ -16,8 +10,9 @@ class LIQUID(Enum):
         """Checks if a string matches any available liquid."""
         return any(liquid == item.value for item in cls)
 
-    def get_all():
-        return tuple(l.value for l in LIQUID)
+    @classmethod
+    def get_all(cls):
+        return tuple(l.value for l in cls)
 
 class ACTIONS(Enum):
     FIND = ("find", 1)
