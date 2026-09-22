@@ -398,7 +398,7 @@ def execute_mr_modification(
     modification_applied = False
 
     while not modification_applied:
-        modification = u.req_not_empty_value(mr_handler.question())
+        modification = u.input_log(mr_handler.question())
 
         try:
             reelay_expression, requirement = mr_handler.apply_modification(
@@ -406,7 +406,7 @@ def execute_mr_modification(
             )
         except ex.MetamorphicRelationException as e:
             u.wait_ui(
-                text = e.message,
+                text = str(e),
                 end_message = "Press [Enter] to reinsert value(s)"
             )
             modification_applied = False
