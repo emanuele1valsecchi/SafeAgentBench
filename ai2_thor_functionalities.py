@@ -1,15 +1,12 @@
 #https://ai2thor.allenai.org/
 
 from ai2thor.controller import Controller
-import ai2_thor_task as task
-from ai2_thor_task import ACTIONS
 import numpy as np
 from scipy import spatial
 import math
 import networkx as nx
 import custom_exceptions as ex
-import ai_command as ai_cmd
-import rye
+from utils import print_log
 
 # === DEFAULT VALUES ===
 SLEEP_BETWEEN_STEPS = 0.0001
@@ -66,7 +63,7 @@ def move_object_at(controller : Controller, object_id : str, receptacle_id : str
 
     moving_obj = get_object_by_id(controller, object_id)
 
-    if not moving_obj['pickupable'] and not moving_obj['moveable']:
+    if not is_pickupable(moving_obj) and not moving_obj['moveable']:
         raise ex.BadActionFormat(f"{get_object_type(moving_obj)} cannot be moved on the desired receptacle")
 
     positions = get_position_above_object(controller, receptacle_id)
@@ -95,29 +92,15 @@ def last_action_state(controller : Controller):
 
 def print_metadata(controller : Controller):
     for k, v in controller.last_event.metadata.items():
-        print(f"\n{k} : {v}\n")
+        print_log(f"\n{k} : {v}\n")
 
 def print_object_info(object : dict[str, str], *args : str):
     for k, v in object.items():
         if not args:
-            print(f"{k} : {v}")
+            print_log(f"{k} : {v}")
         elif k in args:
-            print(f"{k} : {v}")
-    print()
-
-def is_sublist( list_a : list, list_b : list):
-    """Checks if list_b is a list contained in list_a
-    Args:
-        list_a: a list of any default python type
-        list_b: a list of any default python type
-
-    Returns:
-        True: if list_b is contained in list_a
-        False: if list_b is NOT contained in list_a"""
-    a_str = ','.join(map(str, list_a))
-    b_str = ','.join(map(str, list_b))
-
-    return a_str.find(b_str) != -1
+            print_log(f"{k} : {v}")
+    print_log()
 
 # === POSITION ===
 def get_agent_position(controller : Controller) -> dict:
@@ -323,7 +306,7 @@ def get_path_to_position(controller: Controller, target_position: dict) -> list[
 
 def teleport_to_free_position(controller : Controller):
     """Try to teleport the agent in a free position, without animation.
-    This action should be used only if the agent is stucked in a position and should free itself
+    This action should be used only if the agent is stuck in a position and should free itself
     
     Raises:
         Ai2THORException: if the teleport cannot be done in MAX_ATTEMPTS times"""
@@ -422,6 +405,9 @@ def look_at_object(controller: Controller, target: dict[str, str]):
 def get_object_type(object : dict) -> str:
     return object['objectType']
 
+def get_object_type_from_id(object_id : str):
+    return object_id.split("|")[0].strip()
+
 def is_object_type(object : dict, object_type : str):
     return get_object_type(object).lower() == object_type.lower()
 
@@ -430,6 +416,9 @@ def is_object_close(target : dict[str, str], target_max_dist = TARGET_MAX_DISTAN
 
 def get_object_id(object : dict) -> str:
     return object['objectId']
+
+def get_object_name(object : dict[str, str]):
+    return object['name']
 
 def get_object_by_type(controller: Controller, object_type: str) -> dict[str, str]:
     """Return the object with object_name reference in the scene if found, otherwise None"""
@@ -456,6 +445,16 @@ def get_object_by_id(controller : Controller, object_id : str) -> dict[str, str]
             return obj
 
     return None
+
+def get_object_by_name(controller : Controller, object_name : str) -> dict[str, str]:
+    if not object_name:
+        raise ex.ObjectException(f"The object id given is not valid")
+
+    objs = get_objects_in_scene(controller)
+
+    for obj in objs:
+        if get_object_name(obj) == object_name:
+            return obj
 
 def filter_objects_for(objects : list, **kwargs) -> list:
     """Filter the objects list passed accordingly to **kwargs 'key:value'.\n
@@ -497,11 +496,11 @@ def display_objects(objects : list[dict], *args: str):
         if args:
             for objk, objd in obj.items():
                 if objk in args:
-                    print(f"{objk}: {objd}")
+                    print_log(f"{objk}: {objd}")
         else:
             for objk, objd in obj.items():
-                print(f"{objk}: {objd}")
-        print()
+                print_log(f"{objk}: {objd}")
+        print_log()
 
 def get_visible_objects_in_scene(controller: Controller):
     return get_objects_in_scene(controller, visible=True)
@@ -577,11 +576,8 @@ def get_agent_holded_object(controller : Controller):
 
     return inventory_objects[0]
 
-def get_liquid_inside(object : dict[str, str]) -> str:
-    return object['fillLiquid']
-
 def is_object_in_receptacle(controller : Controller, object : dict[str, str], receptacle : dict[str, str]) -> bool:
-    receptacles = get_object_by_id(controller, get_object_id(object))['parentReceptacles']
+    receptacles = get_object_parent_receptacles(get_object_by_id(controller, get_object_id(object)))
 
     if receptacles:
         return get_object_id(receptacle) in receptacles
@@ -614,13 +610,23 @@ def right_receptacle_or_pickup(controller : Controller, inventory_object : dict[
 
     return False
 
-def try_place_at_point(controller : Controller, position_above : dict[str, str], inventory_object : dict[str, str], receptacle : dict[str, str]):
+def try_place_at_point(
+        controller : Controller, 
+        position_above : dict[str, str], 
+        inventory_object : dict[str, str], 
+        receptacle : dict[str, str]
+    ):
     if get_agent_inventory(controller):
         controller.step(action="DropHandObject", forceAction=True)
 
     safe_position = position_above
 
+    max_y_offset = position_above['y'] + 0.1
+
     for _ in range(MAX_ATTEMPTS):
+        if safe_position['y'] > max_y_offset:
+            break
+
         controller.step(
             action="PlaceObjectAtPoint",
             objectId=get_object_id(inventory_object),
@@ -664,196 +670,64 @@ def get_position_above_object(controller : Controller, object_id : str):
     
     return controller.last_event.metadata['actionReturn']
 
+def is_toggleable(object : dict[str, str]):
+    return object['toggleable']
+
+def is_on(object : dict[str, str]) -> bool:
+    return object['isToggled']
+
+def is_breakable(object : dict[str, str]):
+    return object['breakable']
+
+def is_broken(object : dict[str, str]):
+    return object['isBroken']
+
+def can_contain_liquid(object : dict[str, str]):
+    return object['canFillWithLiquid']
+
+def contains_liquid(object : dict[str, str]):
+    return object['isFilledWithLiquid']
+
+def get_liquid_inside(object : dict[str, str]) -> str:
+    return object['fillLiquid']
+
+def is_dirtable(object : dict[str, str]):
+    return object['dirtyable']
+
+def is_dirty(object : dict[str, str]):
+    return object['isDirty']
+
+def is_cookable(object : dict[str, str]):
+    return object['cookable']
+
+def is_cooked(object : dict[str, str]):
+    return object['isCooked']
+
+def is_sliceable(object : dict[str, str]):
+    return object['sliceable']
+
+def is_sliced(object : dict[str, str]):
+    return object['isSliced']
+
+def is_openable(object : dict[str, str]):
+    return object['openable']
+
+def is_open(object : dict[str, str]):
+    return object['isOpen']
+
+def get_openness(object : dict[str, str]):
+    return object['openness']
+
+def is_completely_open(object : dict[str, str]):
+    return is_open(object) and get_openness(object) == 1.0
+
+def is_pickupable(object : dict[str, str]):
+    return object['pickupable']
+
+def is_picked_up(object : dict[str, str]):
+    return object['isPickedUp']
+
 # === TASK EXECUTION ===
-
-def decode_step(controller : Controller, step : str):
-    action = task.get_action_from_cmd( step )
-
-    if not ACTIONS.is_action(action):
-        raise ex.BadActionFormat(f"Action '{action}' was not recognized by the agent")
-
-    action = ACTIONS(action)
-
-    targets_id = task.get_subjects_from_cmd( step )
-
-    if len(targets_id) != action.objects_required:
-        raise ex.BadActionFormat(f"Action '{action}' requires exactly {action.objects_required} target(s), \
-                                 but {len(targets_id)} were provided")
-
-    if action.objects_required == 0:
-        return action, None, None
-
-    obj = get_object_by_id(controller, targets_id[0])
-
-    if not obj:
-        raise ex.BadActionFormat(f"The target of '{action}' was not found in the scene")
-
-    liquid = None
-    if action.objects_required == 2:
-        liquid = targets_id[1].lower()
-        if not task.LIQUID.is_liquid(liquid):
-            raise ex.BadActionFormat(
-                f"The liquid '{liquid}' is not allowed, available liquids are: {task.LIQUID.get_all()}"
-            )
-
-    return action, obj, liquid
-
-def execute_plan(controller: Controller, plan: list[str], ai_manager : ai_cmd.aiManager = None, rye_manager : rye.RyeManager = None) -> tuple[bool, list[str]]:
-    """Execute the plan in the Ai2Thor environment
-    
-    Args:
-        controller: the Ai2Thor controller
-        plan: list of instructione that the embodied has to execute
-    """
-    
-    for i, step in enumerate(plan):
-
-        action, obj, liquid = decode_step(controller, step)
-
-        if not action and not obj and not liquid:
-            raise ex.BadActionFormat(f"Error in command given to the agent")
-
-        step_command = f"{action} {get_object_type(obj) if obj else ""} {liquid or ""}".strip()
-        print(f"-> {step_command}")
-        
-        match action:
-            case ACTIONS.FIND:
-                reach_object(controller, obj)
-                if rye_manager:
-                    rye_manager.encode_empty_action()
-
-            case ACTIONS.PICK:
-                pick_up_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_pick(get_object_type(obj).lower(), get_object_parent_receptacles_type(controller, obj).lower())
-
-            case ACTIONS.PUT:
-                holded_object_type = get_object_type(get_agent_holded_object(controller))
-                put_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_put(holded_object_type.lower(), get_object_type(obj).lower())
-
-            case ACTIONS.DROP:
-                held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
-                drop_object(controller)
-                if rye_manager : 
-                    rye_manager.encode_drop(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
-
-            case ACTIONS.THROW:
-                held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
-                throw_object(controller)
-                if rye_manager : 
-                    rye_manager.encode_throw(get_object_type(held_object).lower(), get_object_parent_receptacles_type(controller, held_object).lower())
-
-            case ACTIONS.MOVEHELDBACK:
-                move_held_object_back(controller)
-                if rye_manager : 
-                    rye_manager.encode_moveheldback()
-
-            case ACTIONS.MOVEHELDLEFT:
-                move_held_object_left(controller)
-                if rye_manager : 
-                    rye_manager.encode_moveheldleft()
-
-            case ACTIONS.MOVEHELDRIGHT:
-                move_held_object_right(controller)
-                if rye_manager : 
-                    rye_manager.encode_moveheldright()
-
-            case ACTIONS.MOVEHELDUP:
-                move_held_object_up(controller)
-                if rye_manager : 
-                    rye_manager.encode_moveheldup()
-
-            case ACTIONS.MOVEHELDDOWN:
-                move_held_object_down(controller)
-                if rye_manager : 
-                    rye_manager.encode_moveheldown()
-
-            case ACTIONS.POUR:
-                held_object = get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))
-                rotate_held_object(controller)
-                if rye_manager : 
-                    rye_manager.encode_pour(get_object_type(held_object).lower(), get_liquid_inside(held_object).lower())
-
-            case ACTIONS.PUSH:
-                directional_push_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_push(get_object_type(obj))
-
-            case ACTIONS.PULL:
-                direction_pull_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_pull(get_object_type(obj))
-
-            case ACTIONS.OPEN:
-                open_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_open(get_object_type(obj))
-
-            case ACTIONS.CLOSE:
-                close_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_close(get_object_type(obj))
-
-            case ACTIONS.BREAK:
-                break_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_break(get_object_type(obj))
-
-            case ACTIONS.COOK:
-                cook_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_cook(get_object_type(obj))
-
-            case ACTIONS.SLICE:
-                slice_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_slice(get_object_type(obj))
-
-            case ACTIONS.TURNON:
-                toggle_object_on(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_turnon(get_object_type(obj))
-
-            case ACTIONS.TURNOFF:
-                toggle_object_off(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_turnoff(get_object_type(obj))
-
-            case ACTIONS.DIRTY:
-                dirty_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_dirty(get_object_type(obj))
-
-            case ACTIONS.CLEAN:
-                clean_object(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_clean(get_object_type(obj))
-
-            case ACTIONS.FILLLIQUID:
-                fill_object_with_liquid(controller, obj, liquid)
-                if rye_manager : 
-                    rye_manager.encode_fillliquid(get_object_type(obj), liquid)
-
-            case ACTIONS.EMPTYLIQUID:
-                empty_object_from_liquid(controller, obj)
-                if rye_manager : 
-                    rye_manager.encode_emptyliquid(get_object_type(obj), get_liquid_inside(obj))
-
-            case _:
-                raise ex.BadActionFormat(f"Action '{action}' not allowed")
-
-        if ai_manager:
-            ai_manager.update_performed_actions(step_command)
-
-            if (i != (len(plan) - 1)):
-                new_plan = ai_manager.update_plan(plan, (i + 1), get_objects_in_scene(controller))
-
-                if (not (new_plan == plan)) and (not is_sublist(plan, new_plan)):
-                    return False, new_plan
-
-    return True, None
 
 def resilient_execution(controller : Controller, **kwargs):
     controller.step(**kwargs)
@@ -1189,7 +1063,7 @@ def rotate_held_object(controller : Controller, pour = True):
 
     if not holded_object:
         raise ex.HoldingObjectsException(f"Cannot find the object in the scene")
-    elif pour and (not holded_object['isFilledWithLiquid']):
+    elif pour and (not contains_liquid(holded_object)):
         raise ex.InteractionException(f"The object '{holded_object}' is not filled with any liquid")
 
     degree_step = 60.0
@@ -1202,7 +1076,7 @@ def rotate_held_object(controller : Controller, pour = True):
 
         degree_step += 30.0
 
-    if pour and get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))['isFilledWithLiquid']:
+    if pour and contains_liquid(get_object_by_id(controller, get_object_id(get_agent_holded_object(controller)))):
         raise ex.InteractionException("The liquid cannot be poured from the object")
 
 def directional_push_object(controller : Controller, object : dict[str, str]):
@@ -1228,7 +1102,7 @@ def open_object(controller: Controller, object: dict):
 
     current_openness = step_size
 
-    if object['openable'] and object['openness'] < 1.0:
+    if is_openable(object) and get_openness(object) < 1.0:
     
         for i in range(steps_num):
             controller.step(
@@ -1258,11 +1132,11 @@ def open_object(controller: Controller, object: dict):
             
             current_openness += step_size
 
-    elif not object['openable']:
+    elif not is_openable(object):
         raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
 
 def close_object(controller: Controller, object: dict):
-    if object['openable'] and object['openness'] > 0.0:
+    if is_openable(object) and get_openness(object) > 0.0:
 
         resilient_execution(controller,
             action="CloseObject",
@@ -1270,13 +1144,13 @@ def close_object(controller: Controller, object: dict):
             forceAction=False
         )
 
-    elif not object['openable']:
+    elif not is_openable(object):
         raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be closed")
 
 def break_object(controller : Controller, object : dict):
-    if not object['breakable']:
+    if not is_breakable(object):
         raise ex.ObjectException("The selected object cannot be broken")
-    elif object['isBroken']:
+    elif is_broken(object):
         raise ex.ObjectException("The selected object is already broken")
 
     resilient_execution(controller,
@@ -1287,9 +1161,9 @@ def break_object(controller : Controller, object : dict):
 
 def cook_object(controller : Controller, object : dict[str, str]):
 
-    if not object['cookable']:
+    if not is_cookable(object):
         raise ex.InteractionException(f"{object['name'].capitalize()} cannot be cooked")
-    elif object['isCooked']:
+    elif is_cooked(object):
         raise ex.InteractionException(f"{object['name'].capitalize()} is already cooked")
 
     resilient_execution(controller,
@@ -1302,7 +1176,7 @@ def slice_object(controller: Controller, object: dict):
 
     get_agent_holded_object(controller)
 
-    if object['sliceable'] and (not object['isSliced']):
+    if is_sliceable(object) and (not is_sliced(object)):
 
         resilient_execution(controller,
             action="SliceObject", 
@@ -1311,9 +1185,9 @@ def slice_object(controller: Controller, object: dict):
         )
 
 def toggle_object_on(controller : Controller, object : dict[str, str]):
-    if not object['toggleable']:
+    if not is_toggleable(object):
         raise ex.InteractionException(f"{get_object_type(object).capitalize()} cannot be toggled on")
-    elif object['isToggled']:
+    elif is_on(object):
         raise ex.InteractionException(f"{get_object_type(object).capitalize()} is already toggled on")
 
     resilient_execution(controller,
@@ -1323,9 +1197,9 @@ def toggle_object_on(controller : Controller, object : dict[str, str]):
     )
 
 def toggle_object_off(controller : Controller, object : dict[str, str]):
-    if not object['toggleable']:
+    if not is_toggleable(object):
         raise ex.InteractionException(f"{get_object_type(object).capitalize()} cannot be toggled off")
-    elif not object['isToggled']:
+    elif not is_on(object):
         raise ex.InteractionException(f"{get_object_type(object).capitalize()} is already toggled off")
 
     resilient_execution(controller,
@@ -1335,9 +1209,9 @@ def toggle_object_off(controller : Controller, object : dict[str, str]):
     )
 
 def dirty_object(controller : Controller, object : dict[str, str]):
-    if not object['dirtyable']:
+    if not is_dirtable(object):
         raise ex.InteractionException(f"{object['name'].capitalize()} cannot be dirty")
-    elif object['isDirty']:
+    elif is_dirty(object):
         raise ex.InteractionException(f"{object['name'].capitalize()} is already dirty")
 
     resilient_execution(controller,
@@ -1347,9 +1221,9 @@ def dirty_object(controller : Controller, object : dict[str, str]):
     )
 
 def clean_object(controller : Controller, object : dict[str, str]):
-    if not object['dirtyable']:
+    if not is_dirtable(object):
         raise ex.InteractionException(f"{object['name'].capitalize()} cannot be cleaned since it cannot be dirty")
-    elif not object['isDirty']:
+    elif not is_dirty(object):
         raise ex.InteractionException(f"{object['name'].capitalize()} is not dirty")
 
     resilient_execution(controller,
@@ -1359,10 +1233,10 @@ def clean_object(controller : Controller, object : dict[str, str]):
     )
 
 def fill_object_with_liquid(controller : Controller, object : dict[str, str], liquid : str):
-    if not object['canFillWithLiquid']:
+    if not can_contain_liquid(object):
         raise ex.ObjectException("The object cannot be filled with any liquid")
-    elif object['isFilledWithLiquid'] and object['fillLiquid']:
-        raise ex.InteractionException(f"The object is already filled with '{object['fillLiquid']}'")
+    elif contains_liquid(object) and get_liquid_inside(object):
+        raise ex.InteractionException(f"The object is already filled with '{get_liquid_inside(object)}'")
 
     resilient_execution(controller,
         action="FillObjectWithLiquid",
@@ -1372,7 +1246,7 @@ def fill_object_with_liquid(controller : Controller, object : dict[str, str], li
     )
 
 def empty_object_from_liquid(controller : Controller, object : dict[str, str]):
-    if not object['isFilledWithLiquid']:
+    if not contains_liquid(object):
         raise ex.InteractionException("The object is already empty")
 
     resilient_execution(controller,
