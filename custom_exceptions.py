@@ -1,7 +1,8 @@
 from ai2thor.controller import Controller
 import re
 
-class BadActionFormat(Exception):
+class CustomException(Exception):
+    """Base exception to handle standard string messages."""
     def __init__(self, message):
         super().__init__()
         self.message = message
@@ -9,37 +10,29 @@ class BadActionFormat(Exception):
     def __str__(self):
         return f"{self.message}"
 
-class InteractionException(Exception):
-    def __init__(self, message):
-            super().__init__()
-            self.message = message
-    
-    def __str__(self):
-        return f"{self.message}"
+class BadActionFormat(CustomException):
+    pass
 
-class HoldingObjectsException(Exception):
-    def __init__(self, message):
-                super().__init__()
-                self.message = message
-        
-    def __str__(self):
-        return f"{self.message}"
+class InteractionException(CustomException):
+    pass
 
-class ObjectException(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-             
-    def __str__(self):
-        return f"{self.message}"
+class HoldingObjectsException(BaseException):
+    pass
 
-class ReceptacleException(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-             
-    def __str__(self):
-        return f"{self.message}"
+class ObjectException(BaseException):
+    pass
+
+class ReceptacleException(BaseException):
+    pass
+
+class AIRequestException(BaseException):
+    pass
+
+class MetamorphicRelationException(BaseException):
+    pass
+
+class Ai2THORExecuterException(BaseException):
+    pass
 
 class Ai2THORException(Exception):
     def __init__(self, controller : Controller):
@@ -64,19 +57,3 @@ class Ai2THORException(Exception):
 
     def is_collision(self):
         return self.exception == 'InvalidOperationException' and self.message.lower().startswith("collided")
-
-class AIRequestException(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-             
-    def __str__(self):
-        return f"{self.message}"
-
-class MetamorphicRelationException(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-             
-    def __str__(self):
-        return f"{self.message}"
