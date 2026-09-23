@@ -1,4 +1,5 @@
 import re
+import random
 import custom_exceptions as ex
 from enum import Enum
 import ai_command as aicmd
@@ -101,6 +102,7 @@ class Handler():
         self.thesaurus_map = thesaurus_map if thesaurus_map else {}
         self.inverted_reelay = inverted_reelay
         self.invertible_keys = []
+        self.random_chosen_couple = []
 
     def __set_mr(self, *,
                chosen_mr : MR | int = None):
@@ -235,6 +237,56 @@ class Handler():
                 return self.__execute_mrtvsv(modification, ai_generated)
             case _:
                 raise ex.MetamorphicRelationException("Cannot resolve the metamorphic relation requested")
+
+    # === Random Modification === #
+    def get_random_modification(self):
+        self.__check_mr()
+
+        match self.chosen_mr:
+            case MR.TC_SS:
+                self.__check_thesaurus_map()
+                choices = []
+                for _, v in self.thesaurus_map.items():
+                    choices.append(str(random.randint(1, len(v['synonyms']))))
+                return ", ".join(choices)
+            
+            case MR.TC_OR:
+                self.__check_controller()
+                objs = get_objects_in_scene(self.controller)
+                return str(random.randint(1, len(objs)))
+                
+            case MR.TC_LBC:
+                min_val = round(random.uniform(0.1, 4.0), 2)
+                max_val = round(random.uniform(min_val, 5.0), 2)
+                return f"{min_val}, {max_val}"
+                
+            case MR.TV_NTI:
+                return ""
+                
+            case MR.TV_TR:
+                moving_objs, receptacles = self.__get_tv_tr_elements(type = False)
+
+                m_idx = random.randint(1, len(moving_objs))
+                r_idx = random.randint(1, len(receptacles))
+
+                selected = None
+                attempts = 0
+
+                while not selected:
+                    selected = f"{m_idx}, {r_idx}"
+
+                    if selected not in self.random_chosen_couple:
+                        self.random_chosen_couple.append(selected)
+                    else:
+                        selected = None
+                        attempts += 1
+                        if attempts > 50:
+                            self.random_chosen_couple.clear()
+
+                return selected
+                
+            case MR.TV_SV:
+                return str(random.randint(1, 10))
 
     # === Rye Modification === #
 
