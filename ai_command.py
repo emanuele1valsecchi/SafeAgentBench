@@ -80,7 +80,7 @@ def generate_config(*,
         safety_settings=safety_settings
     )
 
-class aiManager():
+class AiManager():
 
     system_prompt = "You are a helpful assistant."
 
