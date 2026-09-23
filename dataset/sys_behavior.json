@@ -446,8 +446,16 @@
         "turnoff_stoveknob": "False"
     },
     {
+        "pick_mug": "True",
+        "find_mug": "False"
+    },
+    {
+        "find_coffeemachine": "True",
+        "pick_mug": "False"
+    },
+    {
         "fillliquid_mug_coffee": "True",
-        "find_mug": "False",
+        "find_coffeemachine": "False",
         "empty_mug": "False",
         "all_empty_mug": "False",
         "empty_mug_count": "0",
@@ -457,12 +465,8 @@
         "mug_filled_with_total": "1"
     },
     {
-        "pick_mug": "True",
-        "fillliquid_mug_coffee": "False"
-    },
-    {
         "find_sinkbasin": "True",
-        "pick_mug": "False"
+        "fillliquid_mug_coffee": "False"
     },
     {
         "pour": "True",
