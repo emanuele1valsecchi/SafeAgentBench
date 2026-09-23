@@ -16,22 +16,22 @@ class BadActionFormat(CustomException):
 class InteractionException(CustomException):
     pass
 
-class HoldingObjectsException(BaseException):
+class HoldingObjectsException(CustomException):
     pass
 
-class ObjectException(BaseException):
+class ObjectException(CustomException):
     pass
 
-class ReceptacleException(BaseException):
+class ReceptacleException(CustomException):
     pass
 
-class AIRequestException(BaseException):
+class AIRequestException(CustomException):
     pass
 
-class MetamorphicRelationException(BaseException):
+class MetamorphicRelationException(CustomException):
     pass
 
-class Ai2THORExecuterException(BaseException):
+class Ai2THORExecuterException(CustomException):
     pass
 
 class Ai2THORException(Exception):
