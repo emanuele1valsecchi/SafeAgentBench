@@ -31,7 +31,7 @@ def input_log(text: str = None, save_to_log: bool = True) -> str:
         
     return user_response
 
-# === USEFUL FUNCTIONS === #
+# === INPUT/OUTPUT === #
 
 def format_column_content(*, 
         content : list[str], 
