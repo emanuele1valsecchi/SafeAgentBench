@@ -1,5 +1,5 @@
 from ai2thor.controller import Controller
-from ai_command import aiManager
+from ai_command import AiManager
 from rye import RyeManager
 from ai2_thor_task import ACTIONS
 from ai2_thor_task import LIQUID
@@ -11,7 +11,7 @@ class Ai2THORExecuter():
     def __init__(self, *, 
             controller : Controller = None,
             plan : list[str] = None,
-            ai_manager : aiManager = None,
+            ai_manager : AiManager = None,
             rye_manager : RyeManager = None,
             replanning_count : int = 0
         ):
