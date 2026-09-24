@@ -1,5 +1,6 @@
 import reelay
 import json
+import re
 from utils import save_in_log
 from ai2_thor_functionalities import get_object_type
 from ai2_thor_functionalities import get_object_type_from_id
@@ -30,7 +31,16 @@ class RyeManager:
         self.read_data  : list[dict[str, str]] = []
         self.errors     : list[dict[str, str]] = []
 
+    def __add_missing_encodings(self):
+        first_stored_data = self.store_data[0]
+
+        for data in self.store_data[1:]:
+            for k, v in data.items():
+                if k not in first_stored_data.keys():
+                    first_stored_data[k] = not v if (v == True or v == False) else 0
+
     def save_to_json(self, file : str = __DEFAULT_FILE):
+        self.__add_missing_encodings()
         with open(file, "w", encoding='utf-8') as f:
             json.dump(self.store_data, f, ensure_ascii=False, indent=4)
 
@@ -51,6 +61,8 @@ class RyeManager:
         if not self.read_data:
             self.read_from_json()
 
+        rye_pattern = re.sub(r'[HP]\[0:0\]', '', rye_pattern)
+
         monitor = reelay.discrete_timed_monitor(pattern = repr(rye_pattern)[1:-1], condense = False)
 
         for i, data in enumerate(self.read_data):
@@ -58,9 +70,9 @@ class RyeManager:
 
             if r['value'] is False:
                 if not last_state_only:
-                    self.errors.append(f"Error at {monitor.now()}:\n RYE: '{rye_pattern}'\n was not respected\n")
+                    self.errors.append(f"Error at {monitor.now()}:\nRYE: '{rye_pattern}'\nNot respected\n")
                 elif i == (len(self.store_data) - 1):
-                    self.errors.append(f"RYE: '{rye_pattern}'\n was not respected\n")
+                    self.errors.append(f"RYE: '{rye_pattern}'\nNot respected\n")
 
         return list(self.errors)
 
@@ -72,17 +84,8 @@ class RyeManager:
 
         self.read_from_json()
 
-    def get_value_encoding(self, value : bool):
-        return "True" if value is True else ("False" if value is False else str(value))
-
     def update_state(self, new_data : dict[str, ]):
-        self.store_data.append({
-            k.lower(): self.get_value_encoding(v) 
-            for k, v in new_data.items()
-        })
-
-    def encode_empty_action(self):
-        self.update_state({})
+        self.store_data.append(new_data)
 
     # === SCENE STATE ENCODING === #
 
@@ -117,7 +120,7 @@ class RyeManager:
                 # Set that all the objects with the same type have that property to True
                 environment_state[f"all_{k}"] = all(v_list)
 
-                # Counts all the objects that have a particullarly state to True
+                # Counts all the objects that have a particularly state to True
                 environment_state[f"{k}_count"] = sum(v_list)
             else:
                 environment_state[k] = v_list[0]
@@ -126,16 +129,17 @@ class RyeManager:
             environment_state[f"{obj_type}_total"] = len(v_list)
 
         environment_state = self.__clear_non_changing_args(environment_state)
+        #input(f"\n\nPerformed action: {performed_action}\nEnvironment State: {environment_state}\n\n")
         self.update_state(performed_action | environment_state)
 
     def __clear_non_changing_args(self, environment_state : dict[str, str]):
-        # Used because dictionary can't change size while looping on them
+        # Used because dictionary can't change size while looping on items
         cleaned_state = environment_state.copy()
 
         for k, v in environment_state.items():
             for data in reversed(self.store_data):
                 if k in data.keys():
-                    if self.get_value_encoding(v) == data[k]:
+                    if v == data[k]:
                         cleaned_state.pop(k)
                         break
                     else:
@@ -151,7 +155,7 @@ class RyeManager:
         if self.store_data:
             prev_command = next(iter(self.store_data[-1])) if self.store_data[-1] else ""
 
-        new_command = {step_command.strip().replace(" ", "_") : True}
+        new_command = {step_command.lower().strip().replace(" ", "_") : True}
 
         if prev_command:
             return new_command | {prev_command : False}
@@ -286,15 +290,25 @@ class RyeManager:
         return  object_type + "_in_" + receptacle
 
     def get_ex_receptacle(self, object : dict[str, str]):
+        receptacle_prefix = self.__receptacle_encoding(object, receptacle = "none")
+
         if self.store_data:
             for record in reversed(self.store_data):
-                for k, _ in record.items():
-                    if self.__receptacle_encoding(object, receptacle = "none") in k:
-                        return k.split("_")[-1]
+                for k in record.keys():
+                    k_parts = k.split("_")
+
+                    ex_rec = k_parts[-1]
+                    object_in = f"{k_parts[0]}_{k_parts[1]}_"
+
+                    if receptacle_prefix == object_in:
+                        if ex_rec != "hand" and ex_rec != "count" and ex_rec != "total":
+                            return ex_rec
 
         return None
     
     def encode_pick(self, object : dict[str, str]):
+        encoding = {}
+
         if is_pickupable(object):
             is_picked = is_picked_up(object)
 
@@ -304,89 +318,9 @@ class RyeManager:
                 ex_receptacle = self.get_ex_receptacle(object)
 
                 if ex_receptacle:
-                    encoding = encoding | {self.__receptacle_encoding(object, receptacle = ex_receptacle) : not is_picked}
+                    encoding =  encoding | {self.__receptacle_encoding(object, receptacle = ex_receptacle) : not is_picked}
 
             if get_object_parent_receptacles(object):
-                return encoding | {self.__receptacle_encoding(object) : not is_picked}
+                encoding = encoding | {self.__receptacle_encoding(object) : not is_picked}
 
-        return {}
-        
-
-#r = RyeManager()
-#
-#r.store_data.append(r.encode_liquid_inside({
-#    "objectType" : "Apple",
-#    "canFillWithLiquid" : True,
-#    "isFilledWithLiquid" : False,
-#    "fillLiquid" : None,
-#}))
-#
-#r.store_data.append(r.encode_liquid_inside({
-#    "objectType" : "Apple",
-#    "canFillWithLiquid" : True,
-#    "isFilledWithLiquid" : True,
-#    "fillLiquid" : "wine",
-#}))
-#
-#r.store_data.append(r.encode_liquid_inside({
-#    "objectType" : "Apple",
-#    "canFillWithLiquid" : True,
-#    "isFilledWithLiquid" : False,
-#    "fillLiquid" : None,
-#}))
-#
-#for x in r.store_data:
-#    print(x)
-#
-#
-#pattern = "!(P({stoveburner_on : True} && Y({stoveburner_on : True}) && Y(Y({stoveburner_on : True})) && Y(Y(Y({stoveburner_on : True})))))"
-#
-#r.analysis(pattern)
-#
-#r.encode_pick("apple", "countertop")
-#
-#r.encode_put("apple", "plate")
-#
-#r.encode_drop("apple", "floor")
-#
-#r.encode_throw("apple", "floor")
-#
-#r.encode_moveheldback()
-#
-#r.encode_moveheldleft()
-#
-#r.encode_moveheldright()
-#
-#r.encode_moveheldup()
-#
-#r.encode_moveheldown()
-#
-#r.encode_pour("mug", "coffee")
-#
-#r.encode_push("fridge")
-#
-#r.encode_pull("fridge")
-#
-#r.encode_open("drawer")
-#
-#r.encode_close("microwave")
-#
-#r.encode_break("vase")
-#
-#r.encode_cook("bread")
-#
-#r.encode_slice("potato")
-#
-#r.encode_turnon("stoveburner")
-#
-#r.encode_turnoff("faucet")
-#
-#r.encode_dirty("plate")
-#
-#r.encode_clean("mug")
-#
-#r.encode_fillliquid("mug", "coffee")
-#
-#r.encode_emptyliquid("glass", "wine")
-#
-#r.save_to_json()
+        return encoding
