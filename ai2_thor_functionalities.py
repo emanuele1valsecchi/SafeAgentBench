@@ -209,9 +209,25 @@ def should_agent_stand(target_pos : dict):
     return target_pos['y'] > 0.6
 
 def get_closest_reachable_position(agent_reachable_positions : list[dict], target_position : dict, nth : int = 1) -> dict:
+    if not agent_reachable_positions:
+        return None
+
     kdtree_reachable_positions = get_kdtree_reachable_positions(agent_reachable_positions)
-    _, i = kdtree_reachable_positions.query([target_position['x'], target_position['y'], target_position['z']], k = nth + 1)
-    return agent_reachable_positions[(i[nth - 1])]
+    
+    k_val = min(nth + 1, len(agent_reachable_positions))
+    
+    _, indices = kdtree_reachable_positions.query(
+        [target_position['x'], target_position['y'], target_position['z']], 
+        k = k_val
+    )
+    
+    if k_val == 1:
+        idx = indices
+    else:
+        safe_index = min(nth - 1, k_val - 1)
+        idx = indices[safe_index]
+        
+    return agent_reachable_positions[idx]
 
 def get_object_closest_position(controller: Controller, target : dict[str, str], target_max_dist=TARGET_MAX_DISTANCE, nth = 1) -> tuple[dict, float, float] | None:
     """
@@ -320,13 +336,60 @@ def teleport_to_free_position(controller : Controller):
             action = "Teleport",
             position = free_position,
             horizon = current_horizon,
-            standing = True
+            standing = True,
+            forceAction = (j == MAX_ATTEMPTS - 1)
         )
 
         if last_action_state(controller):
             controller.step( action = "Done")
             return
         
+    raise ex.Ai2THORException(controller)
+
+def teleport_to_closest_available_position(controller: Controller, target_position: dict):
+    """
+    Attempts to teleport the agent to a valid position, iterating through all reachable 
+    positions sorted from closest to farthest relative to a given target location.
+    """
+    current_horizon = get_normalized_horizon(controller.last_event.metadata['agent']['cameraHorizon'])
+    current_rotation = get_agent_rotation_y(controller)
+    reachable_positions = get_agent_reachable_positions(controller)
+    
+    if not reachable_positions:
+        raise ex.Ai2THORException(controller)
+        
+    # Build the KDTree once for efficiency
+    kdtree = get_kdtree_reachable_positions(reachable_positions)
+    total_positions = len(reachable_positions)
+    
+    # Query the tree for all positions, naturally sorted by distance
+    distances, indices = kdtree.query(
+        [target_position['x'], target_position['y'], target_position['z']], 
+        k=total_positions
+    )
+    
+    if total_positions == 1:
+        indices = [indices]
+        
+    for attempt, pos_index in enumerate(indices):
+        candidate_position = reachable_positions[pos_index]
+        is_last_attempt = (attempt == total_positions - 1)
+        
+        controller.step(
+            action="Teleport",
+            position=candidate_position,
+            rotation={'x': 0, 'y': current_rotation, 'z': 0},
+            horizon=current_horizon,
+            standing=True,  # Explicitly force standing to avoid floor clipping with held items
+            forceAction=is_last_attempt
+        )
+
+        # If the teleport was physically valid, finalize the action and exit
+        if last_action_state(controller):
+            controller.step(action="Done")
+            return
+            
+    # If the loop exhausts all reachable positions without success
     raise ex.Ai2THORException(controller)
 
 def rotate_thoward_direction(controller : Controller, target_point : dict):
@@ -399,6 +462,20 @@ def look_at_object(controller: Controller, target: dict[str, str]):
         controller.step( action = "Done")
 
     controller.step(action="Done")
+
+def is_agent_in_collision(controller : Controller):
+    agent_position = get_agent_position(controller)
+    
+    controller.step(
+        action="Teleport",
+        position=agent_position,
+        rotation={'x': 0, 'y': get_agent_rotation_y(controller), 'z': 0},
+        horizon=get_agent_normalized_horizon(controller),
+        standing=should_agent_stand(agent_position),
+        forceAction=False
+    )
+
+    return not last_action_state(controller)
 
 # === OBJECTS ===
 
@@ -825,7 +902,7 @@ def reach_object(controller : Controller, obj : dict[str, str]):
 def pick_up_object(controller: Controller, object : dict):
 
     if not is_object_close(object):
-        raise ex.InteractionException("THe object is not close to the agent")
+        raise ex.InteractionException("The object is not close to the agent")
     elif get_object_parent_receptacles(object) and ( not is_object_interactable(object) ):
         raise ex.InteractionException(f"Cannot interact with the object because it is contained in {get_object_parent_receptacles(object)}")
     elif get_agent_inventory(controller):
@@ -1096,44 +1173,58 @@ def direction_pull_object(controller : Controller, object : dict[str, str]):
     )
 
 def open_object(controller: Controller, object: dict):
+
+    if not is_openable(object):
+        raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
+
+    if get_openness(object) >= 1.0:
+        return
+
     steps_num = 4
 
     step_size = 1.0 / steps_num
 
-    current_openness = step_size
+    current_openness = get_openness(object)
 
-    if is_openable(object) and get_openness(object) < 1.0:
-    
-        for i in range(steps_num):
+    while current_openness < 1.0:
+        current_openness = min(1.0, current_openness + step_size)
+
+        if get_object_type(object) == "Drawer":
             controller.step(
-                action="OpenObject",
-                objectId=get_object_id(object),
-                openness = current_openness,
-                forceAction=False
+                action = "MoveBack"
             )
-    
-            if not last_action_state(controller):    
-                for j in range(MAX_ATTEMPTS):
-                    teleport_to_free_position(controller)
 
-                    look_at_object(controller, object)
-    
-                    controller.step(
-                        action="OpenObject",
-                        objectId=get_object_id(object),
-                        openness = 1.0,
-                        forceAction= True if j == (MAX_ATTEMPTS - 1) else False 
-                    )
-    
-                    if last_action_state(controller):
-                        return
-                else:
-                    raise ex.Ai2THORException(controller)
+        controller.step(
+            action="OpenObject",
+            objectId=get_object_id(object),
+            openness = current_openness,
+            forceAction=False
+        )
+
+        if not last_action_state(controller):
             
-            current_openness += step_size
+            current_openness = 1.0
 
-    elif not is_openable(object):
-        raise ex.InteractionException(f"The object '{get_object_type(object)}' cannot be opened")
+            for j in range(MAX_ATTEMPTS):
+                teleport_to_free_position(controller)
+
+                look_at_object(controller, object)
+
+                controller.step(
+                    action="OpenObject",
+                    objectId=get_object_id(object),
+                    openness = current_openness,
+                    forceAction= True if j == (MAX_ATTEMPTS - 1) else False 
+                )
+
+                if last_action_state(controller):
+                    break
+            else:
+                raise ex.Ai2THORException(controller)
+
+
+    if is_agent_in_collision(controller):
+        teleport_to_closest_available_position(controller, get_agent_position(controller))
 
 def close_object(controller: Controller, object: dict):
     if is_openable(object) and get_openness(object) > 0.0:
