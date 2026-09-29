@@ -2,29 +2,32 @@ import json
 from utils import quit_program
 from utils import print_separator
 from utils import print_log
-from agent_runnner import get_scene
-from agent_runnner import get_instruction
-from agent_runnner import get_requirement
-from agent_runnner import get_reference_steps
-from agent_runnner import get_reelay_expression
-from agent_runnner import get_req_template
-from agent_runnner import get_default_step_number
-from agent_runnner import get_thesaurus_map
-from agent_runnner import get_inverted_reelay
-from agent_runnner import get_state_reelay_expression
-from agent_runnner import print_scenario
-from agent_runnner import define_task
-from agent_runnner import execute_rye_analysis
-from agent_runnner import execute_generated_plan_evaluation
-from agent_runnner import execute_mr_modification
+from agent_runner import get_scene
+from agent_runner import get_instruction
+from agent_runner import get_requirement
+from agent_runner import get_reference_steps
+from agent_runner import get_reelay_expression
+from agent_runner import get_req_template
+from agent_runner import get_default_step_number
+from agent_runner import get_thesaurus_map
+from agent_runner import get_inverted_reelay
+from agent_runner import get_state_reelay_expression
+from agent_runner import print_scenario
+from agent_runner import define_task
+from agent_runner import execute_rye_analysis
+from agent_runner import execute_generated_plan_evaluation
+from agent_runner import execute_mr_modification
 from ai2_thor_functionalities import create_controller
 from ai2_thor_functionalities import get_objects_in_scene
 from ai_command import AiManager
+from ai_command import aiEvaluator
 from rye import RyeManager
 from ai2_thor_executer import Ai2THORExecuter
 from mr_handler import MR
 
-REPEATS_PER_SCENARIO = 10
+REPEATS_PER_SCENARIO = 1
+#MR_TO_CHECK = len(MR) + 1
+MR_TO_CHECK = 1
 
 def get_scenarios():
     try:
@@ -36,6 +39,15 @@ def get_scenarios():
     return pre_defined_list
 
 scenarios = get_scenarios()
+
+completed_execution = 0
+failed_execution = 0
+success_judged = 0
+fail_judged = 0
+replanning_count = 0
+total_inst_errors = 0
+total_req_errors = 0
+average_consistency = 0
 
 for scenario_n in range(len(scenarios)):
     for _ in range(REPEATS_PER_SCENARIO):
@@ -67,7 +79,7 @@ for scenario_n in range(len(scenarios)):
 
         controller = create_controller(scene=scene, width = 1280, height = 720)
 
-        for mr_num in range(len(MR) + 1):
+        for mr_num in range(MR_TO_CHECK):
             environment_objects = get_objects_in_scene(controller)
 
             current_req = requirement
@@ -144,22 +156,58 @@ for scenario_n in range(len(scenarios)):
 
             print_separator()
 
-            inst_errors, req_errors = execute_rye_analysis(
-                rye_manager = rye_manager,
-                req_reelay_expression = current_reelay,
-                inst_reelay_expression = state_reelay_expression,
-                acquire_input = False
-            )
+            if executed:
+                completed_execution += 1
+                inst_errors, req_errors = execute_rye_analysis(
+                    rye_manager = rye_manager,
+                    req_reelay_expression = current_reelay,
+                    inst_reelay_expression = state_reelay_expression,
+                    acquire_input = False
+                )
 
-            execute_generated_plan_evaluation(
-                controller = controller,
-                executer = executer,
-                ai_manager = ai_manager,
-                inst_errors = inst_errors,
-                req_errors = req_errors
-            )
+                (response, 
+                 retries, 
+                 planning_count, 
+                 inst_errors_count, 
+                 req_errors_count, 
+                 consistency) = execute_generated_plan_evaluation(
+                    controller = controller,
+                    executer = executer,
+                    ai_manager = ai_manager,
+                    inst_errors = inst_errors,
+                    req_errors = req_errors
+                )
+
+                if response == aiEvaluator.SUCCESS_CODE:
+                    success_judged += 1
+                elif response == aiEvaluator.FAILURE_CODE:
+                    fail_judged += 1
+
+                replanning_count += planning_count
+
+                total_inst_errors += inst_errors_count
+                total_req_errors += req_errors_count
+
+                average_consistency += consistency
+            else:
+                failed_execution += 1
 
         print_separator( title = "Simulation complete")
         controller.stop()
 
+if completed_execution > 0:
+    average_consistency /= completed_execution
+else:
+    average_consistency = 0.0
+
+print_separator( title = "Summary")
+print_log(f"Total number of simulations: {failed_execution + completed_execution}")
+print_log(f"Completed simulations: {completed_execution}")
+print_log(f"Failed simulations: {failed_execution}")
+print_log(f"Executions judged as successful: {success_judged}")
+print_log(f"Executions judges as failure: {fail_judged}")
+print_log(f"Total numbers of AI planning invocations: {failed_execution + completed_execution + replanning_count}")
+print_log(f"Total errors in reelay expressions related to instructions: {total_inst_errors}")
+print_log(f"Total errors in reelay expressions related to requirements: {total_req_errors}")
+print_log(f"Average consistency: {average_consistency}")
 
