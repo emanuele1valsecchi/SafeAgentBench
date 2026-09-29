@@ -353,6 +353,8 @@ def execute_generated_plan_evaluation(
 
     u.print_separator()
 
+    return response, retries, planning_count, inst_errors_count, req_errors_count, consistency
+
 def execute_mr_modification(
         controller : func.Controller,
         scene : str,
