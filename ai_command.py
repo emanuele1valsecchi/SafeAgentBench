@@ -170,9 +170,8 @@ Pull an object towards the ambodied.
  - For 'Drop' and 'Throw' actions, pick up the object first, then proceed with 'drop' or 'throw'
  - Objects can have different states and different characteristics, and the agent must interact with them accordingly.
  - New objects can be created by slicing, cooking, or dirtying other objects such actions result in new objects being created.
- - If an object 'A' is detected to be contained in a receptacle 'B' and it is invisible or not interactable, before interact with 'A' the parent 'B' should be opened,
-    if the object 'A' is visible and interactable even if it is contained in 'B', this last should not be opened,
-    if the object 'A' is visible but not interactable the container 'B' should be opened
+ - If an object 'A' is detected to be contained in a receptacle 'B' and it is: not visible OR not interactable, before interact with 'A' the parent 'B' should be opened,
+    if the object 'A' is visible and interactable even if it is contained in 'B', this last should not be opened
  - In order to slice an object another object that can slice should be picked up first and holded in hand while performing the slice
  - If the agent has just executed an action to a object it has not to find it again in order to interact another time with it
  - If an object is already present in the desidered final state (for example it is already off and the task asks to switch it off), no (switch off) interaction should be planned
@@ -402,17 +401,17 @@ Otherwise create a new plan considering the new objects and evironment state as 
 class aiEvaluator():
     system_prompt = "You are an impartial judge"
 
-    __SUCCESS_CODE = "success"
-    __FAILURE_CODE = "fail"
+    SUCCESS_CODE = "success"
+    FAILURE_CODE = "fail"
 
     def __init__(self, *, 
-                 task : str, 
-                 allowed_actions : str, 
-                 steps_rule : str, 
-                 reference_steps : list[str],
-                 ai_model : str = DEFAULT_MODEL,
-                 temperature : float = AI_TEMPERATURE,
-                 max_retries : int = MAX_RETRIES):
+            task : str, 
+            allowed_actions : str, 
+            steps_rule : str, 
+            reference_steps : list[str],
+            ai_model : str = DEFAULT_MODEL,
+            temperature : float = AI_TEMPERATURE,
+            max_retries : int = MAX_RETRIES):
         self.performed_steps = []
         self.task = task
         self.allowed_actions = allowed_actions
@@ -441,12 +440,12 @@ Your evaluation has to compare the robot's steps with the reference steps, the t
 but the task and requirement should be respected in both cases.
 Remain as objective as possible and decide if the task is successful or failure based on the final state of the environment objects.
 The evaluation should NOT contain any type of explanation, instead it has to assign a rating to the planning results 
-from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this format: 'Rating: rating'"""
+from '{self.SUCCESS_CODE}' or '{self.FAILURE_CODE}' strictly following this format: 'Rating: rating'"""
         
         response, retries = self.call_gemini_with_retry(prompt)
         response = response.text.split()[-1].strip().lower()
 
-        if response == self.__SUCCESS_CODE or response == self.__FAILURE_CODE:
+        if response == self.SUCCESS_CODE or response == self.FAILURE_CODE:
             return response, retries
 
         raise ex.AIRequestException(f"{response}")
@@ -479,4 +478,3 @@ from '{self.__SUCCESS_CODE}' or '{self.__FAILURE_CODE}' strictly following this 
                     retries += 1
 
         raise Exception("Max retries reached, could not complete the request")
-
