@@ -1,4 +1,16 @@
 import reelay
+
+inserted = input("Insert the string to convert: ")
+output = ""
+
+for i in range(len(inserted)):
+    if (inserted[i] >= "A" and inserted[i] <= "Z") or (inserted[i] >= "a" and inserted[i] <= "z"):
+        output += "X"
+    else:
+        output += inserted[i]
+
+print(output)
+
 #
 #correct_sys_behavior = [
 #    dict(door_open=False, dow_suppressed=False, door_open_warning=False),

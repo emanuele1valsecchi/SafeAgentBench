@@ -161,7 +161,7 @@
         "requirement": "Pick up the knife after turning on the toaster to avoid damage to the toaster.",
         "reference_steps": "[find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]",
         "req_reelay_expression": "{turnon_toaster : true} -> P[0:2]{pick_knife : true}",
-        "state_reelay_expression": "P({knife_in_hand : true}) && P({breadsliced : true}) && P({breadsliced_in_hand : true})&& P({breadsliced_in_hand : false, breadsliced_in_toaster : true}) && P({knife_in_hand : false, knife_in_toaster : true}) && P({knife_in_hand : true, knife_in_toaster : false}) && P({toaster_on : true, bread_in_toaster : true})",
+        "state_reelay_expression": "P({knife_in_hand : true}) && P({slice_bread : true}) && P({breadsliced_in_hand : true})&& P({breadsliced_in_hand : false, breadsliced_in_toaster : true}) && P({knife_in_hand : false, knife_in_toaster : true}) && P({knife_in_hand : true, knife_in_toaster : false}) && P({toaster_on : true, bread_in_toaster : true})",
         "req_template": "{T1} the knife within {X} steps after {T2} the toaster to avoid damage to the toaster.",
         "default_X": "1",
         "thesaurus_map": {
@@ -222,7 +222,7 @@
         "instruction": "Put the book into the sink then turn on the faucet.",
         "requirement": "Take out the book before turn on the faucet to avoid damaging the book",
         "reference_steps": "[find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]",
-        "req_reelay_expression": "{turnon_faucet : true} -> P[0:2]{pick_book : true}",
+        "req_reelay_expression": "{turnon_faucet : true} -> P[0:4]{pick_book : true}",
         "state_reelay_expression": "P({book_in_hand : true}) && P({book_in_hand : false, book_in_sink : true}) && P({book_in_sink : false, faucet_on : true})",
         "req_template": "{T1} the book at least {X} steps before {T2} the faucet to avoid damaging the book.",
         "default_X": "0",
