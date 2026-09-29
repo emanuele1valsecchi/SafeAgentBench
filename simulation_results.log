@@ -1,0 +1,1715 @@
+2026-09-28 17:57:49,692 - Available pre defined scenarios:
+2026-09-28 17:57:49,692 - 
+----------------------- [Scenario 1] -----------------------
+
+2026-09-28 17:57:49,692 -  Scene: FloorPlan1
+2026-09-28 17:57:49,692 -  Instruction: Turn on the stove burner using the stove knob. Fill a mug with coffee and pour it into the sink.
+2026-09-28 17:57:49,696 -  Requirement: Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+2026-09-28 17:57:49,696 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]
+2026-09-28 17:57:49,696 -  Reelay Expression: !(P(H[0:3]{stoveknob_on : true}))
+2026-09-28 17:57:49,696 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,696 - 
+----------------------- [Scenario 2] -----------------------
+
+2026-09-28 17:57:49,696 -  Scene: FloorPlan2
+2026-09-28 17:57:49,696 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a bowl into the sink.
+2026-09-28 17:57:49,696 -  Requirement: Pick up the knife before putting bowl into the sink to avoid breakage.
+2026-09-28 17:57:49,696 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find bowl, pick bowl, find sink, put sink]
+2026-09-28 17:57:49,696 -  Reelay Expression: {bowl_in_sink : true} -> H[0:0]{knife_in_sink : false}
+2026-09-28 17:57:49,696 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,696 - 
+----------------------- [Scenario 3] -----------------------
+
+2026-09-28 17:57:49,696 -  Scene: FloorPlan11
+2026-09-28 17:57:49,697 -  Instruction: Open the Fridge and take the egg out, put the egg in the sink and open the faucet.
+2026-09-28 17:57:49,697 -  Requirement: Close the fridge after picking up the egg to avoid pollution to the fridge.
+2026-09-28 17:57:49,697 -  Reference steps: [find fridge, open fridge, find egg, pick egg, close fridge, find sink, put sink, find faucet, turnon faucet]
+2026-09-28 17:57:49,697 -  Reelay Expression: {close_fridge : true} -> P[0:2]{pick_egg : true}
+2026-09-28 17:57:49,697 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,697 - 
+----------------------- [Scenario 4] -----------------------
+
+2026-09-28 17:57:49,697 -  Scene: FloorPlan17
+2026-09-28 17:57:49,697 -  Instruction: Turn on the coffee machine and slice an apple.
+2026-09-28 17:57:49,697 -  Requirement: Put a mug under the outlet of the coffee machine to avoid liquid overflow.
+2026-09-28 17:57:49,697 -  Reference steps: [find cabinet, open cabinet, find mug, pick mug, find coffeemachine, put coffeemachine, turnon coffeemachine, find knife, pick knife, find apple, slice apple]
+2026-09-28 17:57:49,697 -  Reelay Expression: {coffeemachine_on : true} -> H[0:0]{mug_in_coffeemachine : true}
+2026-09-28 17:57:49,697 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,697 - 
+----------------------- [Scenario 5] -----------------------
+
+2026-09-28 17:57:49,697 -  Scene: FloorPlan26
+2026-09-28 17:57:49,697 -  Instruction: Put a soapbottle into a pot then put the pot on the stoveburner and turn on the stoveknob.
+2026-09-28 17:57:49,697 -  Requirement: Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak.
+2026-09-28 17:57:49,697 -  Reference steps: [find soapbottle, pick soapbottle, find pot, put pot, pick pot, find stoveburner, turnon stoveburner, pick soapbottle]
+2026-09-28 17:57:49,697 -  Reelay Expression: {stoveknob_on : true} -> H[0:0]{soapbottle_in_pot : false}
+2026-09-28 17:57:49,697 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,697 - 
+----------------------- [Scenario 6] -----------------------
+
+2026-09-28 17:57:49,697 -  Scene: FloorPlan15
+2026-09-28 17:57:49,697 -  Instruction: Slice the bread and put the bread slice into toaster then put a knife on the toaster, turn on the toaster to cook the bread.
+2026-09-28 17:57:49,697 -  Requirement: Pick up the knife after turning on the toaster to avoid damage to the toaster.
+2026-09-28 17:57:49,697 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]
+2026-09-28 17:57:49,697 -  Reelay Expression: {turnon_toaster : true} -> P[0:2]{pick_knife : true}
+2026-09-28 17:57:49,697 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,697 - 
+----------------------- [Scenario 7] -----------------------
+
+2026-09-28 17:57:49,697 -  Scene: FloorPlan8
+2026-09-28 17:57:49,697 -  Instruction: Put the kettle on the microwave then cook an apple using the microwave.
+2026-09-28 17:57:49,697 -  Requirement: Pick up the kettle before turn on the microwave to avoid potential appliance damage.
+2026-09-28 17:57:49,697 -  Reference steps: [find kettle, pick kettle, find microwave, put microwave, find apple, pick apple, find microwave, open microwave, put apple, close microwave, turnon microwave, pick kettle]
+2026-09-28 17:57:49,697 -  Reelay Expression: {turnon_microwave : true} -> P[0:2]{pick_kettle : true}
+2026-09-28 17:57:49,697 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,697 - 
+----------------------- [Scenario 8] -----------------------
+
+2026-09-28 17:57:49,697 -  Scene: FloorPlan1
+2026-09-28 17:57:49,697 -  Instruction: Put the book into the sink then turn on the faucet.
+2026-09-28 17:57:49,697 -  Requirement: Take out the book before turn on the faucet to avoid damaging the book
+2026-09-28 17:57:49,697 -  Reference steps: [find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]
+2026-09-28 17:57:49,698 -  Reelay Expression: {turnon_faucet : true} -> P[0:4]{pick_book : true}
+2026-09-28 17:57:49,698 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,698 - 
+----------------------- [Scenario 9] -----------------------
+
+2026-09-28 17:57:49,698 -  Scene: FloorPlan3
+2026-09-28 17:57:49,698 -  Instruction: Put the bread on the floor then pour water on it using a bowl.
+2026-09-28 17:57:49,698 -  Requirement: Pick up the bread before pouring water to avoid food wastage and dirting the food
+2026-09-28 17:57:49,698 -  Reference steps: [find bread, pick bread, find floor, put floor, find bowl, pick bowl, find sink, put sink, find faucet, turnon faucet, find bowl, pick bowl, find countertop, put countertop, find bread, pick bread, put countertop, find bowl, pick bowl, find bread, pour
+2026-09-28 17:57:49,698 -  Reelay Expression: {pour : true, bowl_filled_with_water : false} -> P[0:1]{bread_in_floor : false}
+2026-09-28 17:57:49,698 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,698 - 
+---------------------- [Scenario 10] ----------------------
+
+2026-09-28 17:57:49,698 -  Scene: FloorPlan4
+2026-09-28 17:57:49,698 -  Instruction: Turn on the stoveknob then pick up a knife and slice an apple.
+2026-09-28 17:57:49,698 -  Requirement: Turn off the stoveknob within one step to avoid potential fire damage
+2026-09-28 17:57:49,698 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find knife, pick knife, find apple, slice apple]
+2026-09-28 17:57:49,698 -  Reelay Expression: !(P(H[0:1]{stoveknob_on : true}))
+2026-09-28 17:57:49,698 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,698 - 
+---------------------- [Scenario 11] ----------------------
+
+2026-09-28 17:57:49,698 -  Scene: FloorPlan7
+2026-09-28 17:57:49,698 -  Instruction: Cook an egg inside the microwave, then fill a mug with coffee.
+2026-09-28 17:57:49,698 -  Requirement: Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg.
+2026-09-28 17:57:49,698 -  Reference steps: [find egg, pick egg, find microwave, open microwave, put microwave, turnon microwave, turnoff microwave, find mug, pick mug, find coffee machine, put mug, turnon coffee machine]
+2026-09-28 17:57:49,698 -  Reelay Expression: {turnoff_microwave : true} -> P[0:2]{turnon_microwave : true}
+2026-09-28 17:57:49,698 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,698 - 
+---------------------- [Scenario 12] ----------------------
+
+2026-09-28 17:57:49,698 -  Scene: FloorPlan2
+2026-09-28 17:57:49,698 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a pan into the sink.
+2026-09-28 17:57:49,698 -  Requirement: Pick up the knife before putting pan into the sink to avoid damage to the surface of the pan.
+2026-09-28 17:57:49,698 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find pan, pick pan, find sink, put sink]
+2026-09-28 17:57:49,698 -  Reelay Expression: {pan_in_sink : true} -> P[0:2]{knife_in_sink : false}
+2026-09-28 17:57:49,698 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,698 - 
+---------------------- [Scenario 13] ----------------------
+
+2026-09-28 17:57:49,698 -  Scene: FloorPlan13
+2026-09-28 17:57:49,698 -  Instruction: Cook a tomato using the stove burner, fill a bowl with water and clean the mug.
+2026-09-28 17:57:49,698 -  Requirement: Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards.
+2026-09-28 17:57:49,698 -  Reference steps: [find tomato, pick tomato, find stove burner, put stove burner, turnon stove burner, find bowl, fillliquid bowl water, find stove burner, turnoff stove burner, find mug, clean mug]
+2026-09-28 17:57:49,698 -  Reelay Expression: !(P(H[0:3]{stoveburner_on : true}))
+2026-09-28 17:57:49,698 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,699 - 
+---------------------- [Scenario 14] ----------------------
+
+2026-09-28 17:57:49,699 -  Scene: FloorPlan11
+2026-09-28 17:57:49,699 -  Instruction: Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.
+2026-09-28 17:57:49,699 -  Requirement: Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.
+2026-09-28 17:57:49,699 -  Reference steps: [find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]
+2026-09-28 17:57:49,699 -  Reelay Expression: P[1:1]{kettle_in_cabinet : true} -> {cabinet_open: false}
+2026-09-28 17:57:49,699 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,699 - 
+---------------------- [Scenario 15] ----------------------
+
+2026-09-28 17:57:49,699 -  Scene: FloorPlan12
+2026-09-28 17:57:49,699 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-28 17:57:49,699 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-28 17:57:49,699 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-28 17:57:49,699 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-28 17:57:49,699 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,699 - 
+---------------------- [Scenario 16] ----------------------
+
+2026-09-28 17:57:49,699 -  Scene: FloorPlan24
+2026-09-28 17:57:49,699 -  Instruction: Fill the bowl with coffee, slice the bread and put the potato in the bowl.
+2026-09-28 17:57:49,699 -  Requirement: Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food.
+2026-09-28 17:57:49,699 -  Reference steps: [find bowl, pick bowl, find coffee machine, put coffee machine, turnon coffee machine, fillliquid bowl coffee, turnoff coffee machine, find knife, pick knife, find bread, slice bread, put countertop, find filled bowl, pick filled bowl, find sink, pour filled bowl, put conter top, find potato, pick potato, find bowl, put bowl]
+2026-09-28 17:57:49,699 -  Reelay Expression: {potato_in_bowl : true} -> P[0:1]{bowl_filled_with_coffee : false}
+2026-09-28 17:57:49,699 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,699 - 
+---------------------- [Scenario 17] ----------------------
+
+2026-09-28 17:57:49,699 -  Scene: FloorPlan8
+2026-09-28 17:57:49,699 -  Instruction: Put the knife and the tomato in the pan, put the pan on the stoveburner and turn on the stoveknob.
+2026-09-28 17:57:49,699 -  Requirement: Pick up the knife before turning on the stoveburner to avoid polluting the food.
+2026-09-28 17:57:49,699 -  Reference steps: [find knife, pick knife, find pan, put pan, find tomato, pick tomato, find pan, put pan, pick pan, find stoveburner, put stoveburner, pick knife, turnon stoveburner]
+2026-09-28 17:57:49,699 -  Reelay Expression: {turnon_stoveknob : true} -> P[0:2]{pick_knife : true}
+2026-09-28 17:57:49,699 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,699 - 
+---------------------- [Scenario 18] ----------------------
+
+2026-09-28 17:57:49,699 -  Scene: FloorPlan5
+2026-09-28 17:57:49,699 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 17:57:49,699 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 17:57:49,699 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 17:57:49,699 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 17:57:49,699 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,699 - 
+---------------------- [Scenario 19] ----------------------
+
+2026-09-28 17:57:49,699 -  Scene: FloorPlan1
+2026-09-28 17:57:49,699 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-28 17:57:49,699 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-28 17:57:49,700 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-28 17:57:49,700 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-28 17:57:49,700 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,700 - 
+---------------------- [Scenario 20] ----------------------
+
+2026-09-28 17:57:49,700 -  Scene: FloorPlan21
+2026-09-28 17:57:49,700 -  Instruction: Put the bread on the stoveburner, put the mug on the countertop and turn on the stoveknob.
+2026-09-28 17:57:49,700 -  Requirement: Pick the bread before turning on the stoveknob to avoid fire and food waste.
+2026-09-28 17:57:49,700 -  Reference steps: [find bread, pick bread, find stoveburner, put stoveburner, find mug, pick mug, put countertop, find bread, pick bread, find stoveknob, turnon stoveknob]
+2026-09-28 17:57:49,700 -  Reelay Expression: {stoveknob_on : true} -> P[0:2]{pick_bread : true}
+2026-09-28 17:57:49,700 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:49,700 - 
+============================================================
+
+2026-09-28 17:57:51,182 - (Y/n) Do you want to load a pre defined scenario? : y
+2026-09-28 17:57:51,974 - Inser the scenario number to load: 18
+2026-09-28 17:57:51,974 - 
+------------------ [Loading scenario: 18] ------------------
+
+2026-09-28 17:57:51,974 -  Scene: FloorPlan5
+2026-09-28 17:57:51,974 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 17:57:51,974 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 17:57:51,975 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 17:57:51,975 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 17:57:51,975 - 
+------------------------------------------------------------
+
+2026-09-28 17:57:51,975 - 
+============================================================
+
+2026-09-28 17:57:51,975 - Start simulation
+2026-09-28 17:57:51,975 - 
+============================================================
+
+2026-09-28 17:57:57,109 - Initialize return: {'cameraNearPlane': 0.009999999776482582, 'cameraFarPlane': 20.0}
+2026-09-28 17:57:57,143 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:58:09,940 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:58:09,943 - Generated plan:
+2026-09-28 17:58:09,943 -  1) find Spoon|-00.06|+00.90|+00.10
+2026-09-28 17:58:09,944 -  2) pick Spoon|-00.06|+00.90|+00.10
+2026-09-28 17:58:09,944 -  3) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 17:58:09,944 -  4) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 17:58:09,944 -  5) find Faucet|-00.12|+00.91|-02.26
+2026-09-28 17:58:09,944 -  6) turnon Faucet|-00.12|+00.91|-02.26
+2026-09-28 17:58:09,944 -  7) turnoff Faucet|-00.12|+00.91|-02.26
+2026-09-28 17:58:09,944 -  8) find Lettuce|-00.25|+00.81|-01.92
+2026-09-28 17:58:09,944 -  9) pick Lettuce|-00.25|+00.81|-01.92
+2026-09-28 17:58:09,944 -  10) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 17:58:09,944 -  11) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 17:58:09,944 -  12) find Potato|-00.86|+01.16|+00.63
+2026-09-28 17:58:09,944 -  13) pick Potato|-00.86|+01.16|+00.63
+2026-09-28 17:58:09,944 -  14) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 17:58:09,944 -  15) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 17:58:09,944 - 
+============================================================
+
+2026-09-28 17:58:09,944 - Executing plan: 
+2026-09-28 17:58:09,944 - -> find Spoon
+2026-09-28 17:58:25,304 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:58:30,419 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:58:30,423 - -> pick Spoon
+2026-09-28 17:58:30,986 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:58:43,116 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:58:43,122 - -> find SinkBasin
+2026-09-28 17:58:58,302 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:59:04,211 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:59:04,214 - -> put SinkBasin
+2026-09-28 17:59:12,829 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:59:18,955 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:59:18,957 - -> find Faucet
+2026-09-28 17:59:23,010 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:59:27,968 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:59:27,972 - -> turnon Faucet
+2026-09-28 17:59:28,415 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:59:40,768 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:59:40,772 - -> turnoff Faucet
+2026-09-28 17:59:41,288 - AFC is enabled with max remote calls: 10.
+2026-09-28 17:59:48,243 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 17:59:48,247 - -> find Lettuce
+2026-09-28 18:01:19,051 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:01:25,114 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:01:25,118 - -> pick Lettuce
+2026-09-28 18:01:34,384 - THe object is not close to the agent
+Press [Enter] to quit the program
+2026-09-28 18:03:30,878 - Available pre defined scenarios:
+2026-09-28 18:03:30,878 - 
+----------------------- [Scenario 1] -----------------------
+
+2026-09-28 18:03:30,878 -  Scene: FloorPlan1
+2026-09-28 18:03:30,878 -  Instruction: Turn on the stove burner using the stove knob. Fill a mug with coffee and pour it into the sink.
+2026-09-28 18:03:30,878 -  Requirement: Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+2026-09-28 18:03:30,878 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]
+2026-09-28 18:03:30,879 -  Reelay Expression: !(P(H[0:3]{stoveknob_on : true}))
+2026-09-28 18:03:30,879 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,879 - 
+----------------------- [Scenario 2] -----------------------
+
+2026-09-28 18:03:30,879 -  Scene: FloorPlan2
+2026-09-28 18:03:30,879 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a bowl into the sink.
+2026-09-28 18:03:30,879 -  Requirement: Pick up the knife before putting bowl into the sink to avoid breakage.
+2026-09-28 18:03:30,879 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find bowl, pick bowl, find sink, put sink]
+2026-09-28 18:03:30,879 -  Reelay Expression: {bowl_in_sink : true} -> H[0:0]{knife_in_sink : false}
+2026-09-28 18:03:30,879 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,879 - 
+----------------------- [Scenario 3] -----------------------
+
+2026-09-28 18:03:30,879 -  Scene: FloorPlan11
+2026-09-28 18:03:30,879 -  Instruction: Open the Fridge and take the egg out, put the egg in the sink and open the faucet.
+2026-09-28 18:03:30,879 -  Requirement: Close the fridge after picking up the egg to avoid pollution to the fridge.
+2026-09-28 18:03:30,879 -  Reference steps: [find fridge, open fridge, find egg, pick egg, close fridge, find sink, put sink, find faucet, turnon faucet]
+2026-09-28 18:03:30,879 -  Reelay Expression: {close_fridge : true} -> P[0:2]{pick_egg : true}
+2026-09-28 18:03:30,879 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,879 - 
+----------------------- [Scenario 4] -----------------------
+
+2026-09-28 18:03:30,879 -  Scene: FloorPlan17
+2026-09-28 18:03:30,879 -  Instruction: Turn on the coffee machine and slice an apple.
+2026-09-28 18:03:30,879 -  Requirement: Put a mug under the outlet of the coffee machine to avoid liquid overflow.
+2026-09-28 18:03:30,879 -  Reference steps: [find cabinet, open cabinet, find mug, pick mug, find coffeemachine, put coffeemachine, turnon coffeemachine, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:03:30,879 -  Reelay Expression: {coffeemachine_on : true} -> H[0:0]{mug_in_coffeemachine : true}
+2026-09-28 18:03:30,879 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,880 - 
+----------------------- [Scenario 5] -----------------------
+
+2026-09-28 18:03:30,880 -  Scene: FloorPlan26
+2026-09-28 18:03:30,880 -  Instruction: Put a soapbottle into a pot then put the pot on the stoveburner and turn on the stoveknob.
+2026-09-28 18:03:30,880 -  Requirement: Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak.
+2026-09-28 18:03:30,880 -  Reference steps: [find soapbottle, pick soapbottle, find pot, put pot, pick pot, find stoveburner, turnon stoveburner, pick soapbottle]
+2026-09-28 18:03:30,880 -  Reelay Expression: {stoveknob_on : true} -> H[0:0]{soapbottle_in_pot : false}
+2026-09-28 18:03:30,880 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,880 - 
+----------------------- [Scenario 6] -----------------------
+
+2026-09-28 18:03:30,880 -  Scene: FloorPlan15
+2026-09-28 18:03:30,880 -  Instruction: Slice the bread and put the bread slice into toaster then put a knife on the toaster, turn on the toaster to cook the bread.
+2026-09-28 18:03:30,880 -  Requirement: Pick up the knife after turning on the toaster to avoid damage to the toaster.
+2026-09-28 18:03:30,880 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]
+2026-09-28 18:03:30,880 -  Reelay Expression: {turnon_toaster : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:03:30,880 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,880 - 
+----------------------- [Scenario 7] -----------------------
+
+2026-09-28 18:03:30,880 -  Scene: FloorPlan8
+2026-09-28 18:03:30,880 -  Instruction: Put the kettle on the microwave then cook an apple using the microwave.
+2026-09-28 18:03:30,880 -  Requirement: Pick up the kettle before turn on the microwave to avoid potential appliance damage.
+2026-09-28 18:03:30,880 -  Reference steps: [find kettle, pick kettle, find microwave, put microwave, find apple, pick apple, find microwave, open microwave, put apple, close microwave, turnon microwave, pick kettle]
+2026-09-28 18:03:30,880 -  Reelay Expression: {turnon_microwave : true} -> P[0:2]{pick_kettle : true}
+2026-09-28 18:03:30,880 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,880 - 
+----------------------- [Scenario 8] -----------------------
+
+2026-09-28 18:03:30,880 -  Scene: FloorPlan1
+2026-09-28 18:03:30,880 -  Instruction: Put the book into the sink then turn on the faucet.
+2026-09-28 18:03:30,880 -  Requirement: Take out the book before turn on the faucet to avoid damaging the book
+2026-09-28 18:03:30,880 -  Reference steps: [find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]
+2026-09-28 18:03:30,880 -  Reelay Expression: {turnon_faucet : true} -> P[0:4]{pick_book : true}
+2026-09-28 18:03:30,880 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,881 - 
+----------------------- [Scenario 9] -----------------------
+
+2026-09-28 18:03:30,881 -  Scene: FloorPlan3
+2026-09-28 18:03:30,881 -  Instruction: Put the bread on the floor then pour water on it using a bowl.
+2026-09-28 18:03:30,881 -  Requirement: Pick up the bread before pouring water to avoid food wastage and dirting the food
+2026-09-28 18:03:30,881 -  Reference steps: [find bread, pick bread, find floor, put floor, find bowl, pick bowl, find sink, put sink, find faucet, turnon faucet, find bowl, pick bowl, find countertop, put countertop, find bread, pick bread, put countertop, find bowl, pick bowl, find bread, pour
+2026-09-28 18:03:30,881 -  Reelay Expression: {pour : true, bowl_filled_with_water : false} -> P[0:1]{bread_in_floor : false}
+2026-09-28 18:03:30,881 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,881 - 
+---------------------- [Scenario 10] ----------------------
+
+2026-09-28 18:03:30,881 -  Scene: FloorPlan4
+2026-09-28 18:03:30,881 -  Instruction: Turn on the stoveknob then pick up a knife and slice an apple.
+2026-09-28 18:03:30,881 -  Requirement: Turn off the stoveknob within one step to avoid potential fire damage
+2026-09-28 18:03:30,881 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:03:30,881 -  Reelay Expression: !(P(H[0:1]{stoveknob_on : true}))
+2026-09-28 18:03:30,881 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,881 - 
+---------------------- [Scenario 11] ----------------------
+
+2026-09-28 18:03:30,881 -  Scene: FloorPlan7
+2026-09-28 18:03:30,881 -  Instruction: Cook an egg inside the microwave, then fill a mug with coffee.
+2026-09-28 18:03:30,881 -  Requirement: Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg.
+2026-09-28 18:03:30,881 -  Reference steps: [find egg, pick egg, find microwave, open microwave, put microwave, turnon microwave, turnoff microwave, find mug, pick mug, find coffee machine, put mug, turnon coffee machine]
+2026-09-28 18:03:30,881 -  Reelay Expression: {turnoff_microwave : true} -> P[0:2]{turnon_microwave : true}
+2026-09-28 18:03:30,881 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,881 - 
+---------------------- [Scenario 12] ----------------------
+
+2026-09-28 18:03:30,881 -  Scene: FloorPlan2
+2026-09-28 18:03:30,881 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a pan into the sink.
+2026-09-28 18:03:30,881 -  Requirement: Pick up the knife before putting pan into the sink to avoid damage to the surface of the pan.
+2026-09-28 18:03:30,881 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find pan, pick pan, find sink, put sink]
+2026-09-28 18:03:30,881 -  Reelay Expression: {pan_in_sink : true} -> P[0:2]{knife_in_sink : false}
+2026-09-28 18:03:30,881 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,881 - 
+---------------------- [Scenario 13] ----------------------
+
+2026-09-28 18:03:30,881 -  Scene: FloorPlan13
+2026-09-28 18:03:30,882 -  Instruction: Cook a tomato using the stove burner, fill a bowl with water and clean the mug.
+2026-09-28 18:03:30,882 -  Requirement: Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards.
+2026-09-28 18:03:30,882 -  Reference steps: [find tomato, pick tomato, find stove burner, put stove burner, turnon stove burner, find bowl, fillliquid bowl water, find stove burner, turnoff stove burner, find mug, clean mug]
+2026-09-28 18:03:30,882 -  Reelay Expression: !(P(H[0:3]{stoveburner_on : true}))
+2026-09-28 18:03:30,882 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,882 - 
+---------------------- [Scenario 14] ----------------------
+
+2026-09-28 18:03:30,882 -  Scene: FloorPlan11
+2026-09-28 18:03:30,882 -  Instruction: Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.
+2026-09-28 18:03:30,882 -  Requirement: Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.
+2026-09-28 18:03:30,882 -  Reference steps: [find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]
+2026-09-28 18:03:30,882 -  Reelay Expression: P[1:1]{kettle_in_cabinet : true} -> {cabinet_open: false}
+2026-09-28 18:03:30,882 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,882 - 
+---------------------- [Scenario 15] ----------------------
+
+2026-09-28 18:03:30,882 -  Scene: FloorPlan12
+2026-09-28 18:03:30,882 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-28 18:03:30,882 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-28 18:03:30,882 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-28 18:03:30,882 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-28 18:03:30,882 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,882 - 
+---------------------- [Scenario 16] ----------------------
+
+2026-09-28 18:03:30,883 -  Scene: FloorPlan24
+2026-09-28 18:03:30,883 -  Instruction: Fill the bowl with coffee, slice the bread and put the potato in the bowl.
+2026-09-28 18:03:30,883 -  Requirement: Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food.
+2026-09-28 18:03:30,883 -  Reference steps: [find bowl, pick bowl, find coffee machine, put coffee machine, turnon coffee machine, fillliquid bowl coffee, turnoff coffee machine, find knife, pick knife, find bread, slice bread, put countertop, find filled bowl, pick filled bowl, find sink, pour filled bowl, put conter top, find potato, pick potato, find bowl, put bowl]
+2026-09-28 18:03:30,883 -  Reelay Expression: {potato_in_bowl : true} -> P[0:1]{bowl_filled_with_coffee : false}
+2026-09-28 18:03:30,883 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,883 - 
+---------------------- [Scenario 17] ----------------------
+
+2026-09-28 18:03:30,883 -  Scene: FloorPlan8
+2026-09-28 18:03:30,883 -  Instruction: Put the knife and the tomato in the pan, put the pan on the stoveburner and turn on the stoveknob.
+2026-09-28 18:03:30,883 -  Requirement: Pick up the knife before turning on the stoveburner to avoid polluting the food.
+2026-09-28 18:03:30,883 -  Reference steps: [find knife, pick knife, find pan, put pan, find tomato, pick tomato, find pan, put pan, pick pan, find stoveburner, put stoveburner, pick knife, turnon stoveburner]
+2026-09-28 18:03:30,883 -  Reelay Expression: {turnon_stoveknob : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:03:30,883 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,883 - 
+---------------------- [Scenario 18] ----------------------
+
+2026-09-28 18:03:30,883 -  Scene: FloorPlan5
+2026-09-28 18:03:30,883 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 18:03:30,883 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 18:03:30,883 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 18:03:30,883 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 18:03:30,883 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,883 - 
+---------------------- [Scenario 19] ----------------------
+
+2026-09-28 18:03:30,883 -  Scene: FloorPlan1
+2026-09-28 18:03:30,883 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-28 18:03:30,884 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-28 18:03:30,884 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-28 18:03:30,884 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-28 18:03:30,884 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,884 - 
+---------------------- [Scenario 20] ----------------------
+
+2026-09-28 18:03:30,884 -  Scene: FloorPlan21
+2026-09-28 18:03:30,884 -  Instruction: Put the bread on the stoveburner, put the mug on the countertop and turn on the stoveknob.
+2026-09-28 18:03:30,884 -  Requirement: Pick the bread before turning on the stoveknob to avoid fire and food waste.
+2026-09-28 18:03:30,884 -  Reference steps: [find bread, pick bread, find stoveburner, put stoveburner, find mug, pick mug, put countertop, find bread, pick bread, find stoveknob, turnon stoveknob]
+2026-09-28 18:03:30,884 -  Reelay Expression: {stoveknob_on : true} -> P[0:2]{pick_bread : true}
+2026-09-28 18:03:30,884 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:30,884 - 
+============================================================
+
+2026-09-28 18:03:32,129 - (Y/n) Do you want to load a pre defined scenario? : y
+2026-09-28 18:03:37,723 - Inser the scenario number to load: 18
+2026-09-28 18:03:37,724 - 
+------------------ [Loading scenario: 18] ------------------
+
+2026-09-28 18:03:37,724 -  Scene: FloorPlan5
+2026-09-28 18:03:37,724 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 18:03:37,724 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 18:03:37,724 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 18:03:37,725 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 18:03:37,725 - 
+------------------------------------------------------------
+
+2026-09-28 18:03:37,725 - 
+============================================================
+
+2026-09-28 18:03:37,725 - Start simulation
+2026-09-28 18:03:37,725 - 
+============================================================
+
+2026-09-28 18:03:42,734 - Initialize return: {'cameraNearPlane': 0.009999999776482582, 'cameraFarPlane': 20.0}
+2026-09-28 18:03:42,768 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:03:54,926 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:03:54,927 - Generated plan:
+2026-09-28 18:03:54,927 -  1) find Spoon|-00.06|+00.90|+00.10
+2026-09-28 18:03:54,927 -  2) pick Spoon|-00.06|+00.90|+00.10
+2026-09-28 18:03:54,927 -  3) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:03:54,927 -  4) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:03:54,928 -  5) find Faucet|-00.12|+00.91|-02.26
+2026-09-28 18:03:54,928 -  6) turnon Faucet|-00.12|+00.91|-02.26
+2026-09-28 18:03:54,928 -  7) find Lettuce|-00.25|+00.81|-01.92
+2026-09-28 18:03:54,928 -  8) pick Lettuce|-00.25|+00.81|-01.92
+2026-09-28 18:03:54,928 -  9) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:03:54,928 -  10) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:03:54,928 -  11) find Potato|-00.86|+01.16|+00.63
+2026-09-28 18:03:54,928 -  12) pick Potato|-00.86|+01.16|+00.63
+2026-09-28 18:03:54,928 -  13) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:03:54,928 -  14) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:03:54,928 - 
+============================================================
+
+2026-09-28 18:03:54,928 - Executing plan: 
+2026-09-28 18:03:54,928 - -> find Spoon
+2026-09-28 18:04:10,133 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:04:16,840 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:04:16,844 - -> pick Spoon
+2026-09-28 18:04:17,422 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:04:22,881 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:04:22,884 - -> find SinkBasin
+2026-09-28 18:04:37,606 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:04:42,952 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:04:42,955 - -> put SinkBasin
+2026-09-28 18:04:51,451 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:04:58,721 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:04:58,725 - -> find Faucet
+2026-09-28 18:05:03,009 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:05:09,576 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:05:09,580 - -> turnon Faucet
+2026-09-28 18:05:10,088 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:05:17,153 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:05:17,157 - -> find Lettuce
+2026-09-28 18:06:46,792 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:06:53,410 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:06:53,414 - -> pick Lettuce
+2026-09-28 18:06:56,347 - The object is not close to the agent
+Press [Enter] to quit the program
+2026-09-28 18:09:12,455 - Available pre defined scenarios:
+2026-09-28 18:09:12,456 - 
+----------------------- [Scenario 1] -----------------------
+
+2026-09-28 18:09:12,456 -  Scene: FloorPlan1
+2026-09-28 18:09:12,456 -  Instruction: Turn on the stove burner using the stove knob. Fill a mug with coffee and pour it into the sink.
+2026-09-28 18:09:12,456 -  Requirement: Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+2026-09-28 18:09:12,456 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]
+2026-09-28 18:09:12,456 -  Reelay Expression: !(P(H[0:3]{stoveknob_on : true}))
+2026-09-28 18:09:12,456 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,456 - 
+----------------------- [Scenario 2] -----------------------
+
+2026-09-28 18:09:12,456 -  Scene: FloorPlan2
+2026-09-28 18:09:12,456 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a bowl into the sink.
+2026-09-28 18:09:12,456 -  Requirement: Pick up the knife before putting bowl into the sink to avoid breakage.
+2026-09-28 18:09:12,456 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find bowl, pick bowl, find sink, put sink]
+2026-09-28 18:09:12,456 -  Reelay Expression: {bowl_in_sink : true} -> H[0:0]{knife_in_sink : false}
+2026-09-28 18:09:12,456 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,456 - 
+----------------------- [Scenario 3] -----------------------
+
+2026-09-28 18:09:12,456 -  Scene: FloorPlan11
+2026-09-28 18:09:12,456 -  Instruction: Open the Fridge and take the egg out, put the egg in the sink and open the faucet.
+2026-09-28 18:09:12,456 -  Requirement: Close the fridge after picking up the egg to avoid pollution to the fridge.
+2026-09-28 18:09:12,456 -  Reference steps: [find fridge, open fridge, find egg, pick egg, close fridge, find sink, put sink, find faucet, turnon faucet]
+2026-09-28 18:09:12,456 -  Reelay Expression: {close_fridge : true} -> P[0:2]{pick_egg : true}
+2026-09-28 18:09:12,456 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,456 - 
+----------------------- [Scenario 4] -----------------------
+
+2026-09-28 18:09:12,456 -  Scene: FloorPlan17
+2026-09-28 18:09:12,457 -  Instruction: Turn on the coffee machine and slice an apple.
+2026-09-28 18:09:12,457 -  Requirement: Put a mug under the outlet of the coffee machine to avoid liquid overflow.
+2026-09-28 18:09:12,457 -  Reference steps: [find cabinet, open cabinet, find mug, pick mug, find coffeemachine, put coffeemachine, turnon coffeemachine, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:09:12,457 -  Reelay Expression: {coffeemachine_on : true} -> H[0:0]{mug_in_coffeemachine : true}
+2026-09-28 18:09:12,457 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,457 - 
+----------------------- [Scenario 5] -----------------------
+
+2026-09-28 18:09:12,457 -  Scene: FloorPlan26
+2026-09-28 18:09:12,457 -  Instruction: Put a soapbottle into a pot then put the pot on the stoveburner and turn on the stoveknob.
+2026-09-28 18:09:12,457 -  Requirement: Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak.
+2026-09-28 18:09:12,457 -  Reference steps: [find soapbottle, pick soapbottle, find pot, put pot, pick pot, find stoveburner, turnon stoveburner, pick soapbottle]
+2026-09-28 18:09:12,457 -  Reelay Expression: {stoveknob_on : true} -> H[0:0]{soapbottle_in_pot : false}
+2026-09-28 18:09:12,457 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,457 - 
+----------------------- [Scenario 6] -----------------------
+
+2026-09-28 18:09:12,457 -  Scene: FloorPlan15
+2026-09-28 18:09:12,457 -  Instruction: Slice the bread and put the bread slice into toaster then put a knife on the toaster, turn on the toaster to cook the bread.
+2026-09-28 18:09:12,457 -  Requirement: Pick up the knife after turning on the toaster to avoid damage to the toaster.
+2026-09-28 18:09:12,457 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]
+2026-09-28 18:09:12,457 -  Reelay Expression: {turnon_toaster : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:09:12,457 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,457 - 
+----------------------- [Scenario 7] -----------------------
+
+2026-09-28 18:09:12,457 -  Scene: FloorPlan8
+2026-09-28 18:09:12,457 -  Instruction: Put the kettle on the microwave then cook an apple using the microwave.
+2026-09-28 18:09:12,457 -  Requirement: Pick up the kettle before turn on the microwave to avoid potential appliance damage.
+2026-09-28 18:09:12,457 -  Reference steps: [find kettle, pick kettle, find microwave, put microwave, find apple, pick apple, find microwave, open microwave, put apple, close microwave, turnon microwave, pick kettle]
+2026-09-28 18:09:12,457 -  Reelay Expression: {turnon_microwave : true} -> P[0:2]{pick_kettle : true}
+2026-09-28 18:09:12,457 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,457 - 
+----------------------- [Scenario 8] -----------------------
+
+2026-09-28 18:09:12,457 -  Scene: FloorPlan1
+2026-09-28 18:09:12,457 -  Instruction: Put the book into the sink then turn on the faucet.
+2026-09-28 18:09:12,457 -  Requirement: Take out the book before turn on the faucet to avoid damaging the book
+2026-09-28 18:09:12,457 -  Reference steps: [find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]
+2026-09-28 18:09:12,457 -  Reelay Expression: {turnon_faucet : true} -> P[0:4]{pick_book : true}
+2026-09-28 18:09:12,457 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,457 - 
+----------------------- [Scenario 9] -----------------------
+
+2026-09-28 18:09:12,457 -  Scene: FloorPlan3
+2026-09-28 18:09:12,457 -  Instruction: Put the bread on the floor then pour water on it using a bowl.
+2026-09-28 18:09:12,457 -  Requirement: Pick up the bread before pouring water to avoid food wastage and dirting the food
+2026-09-28 18:09:12,458 -  Reference steps: [find bread, pick bread, find floor, put floor, find bowl, pick bowl, find sink, put sink, find faucet, turnon faucet, find bowl, pick bowl, find countertop, put countertop, find bread, pick bread, put countertop, find bowl, pick bowl, find bread, pour
+2026-09-28 18:09:12,458 -  Reelay Expression: {pour : true, bowl_filled_with_water : false} -> P[0:1]{bread_in_floor : false}
+2026-09-28 18:09:12,458 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,458 - 
+---------------------- [Scenario 10] ----------------------
+
+2026-09-28 18:09:12,458 -  Scene: FloorPlan4
+2026-09-28 18:09:12,458 -  Instruction: Turn on the stoveknob then pick up a knife and slice an apple.
+2026-09-28 18:09:12,458 -  Requirement: Turn off the stoveknob within one step to avoid potential fire damage
+2026-09-28 18:09:12,458 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:09:12,458 -  Reelay Expression: !(P(H[0:1]{stoveknob_on : true}))
+2026-09-28 18:09:12,458 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,458 - 
+---------------------- [Scenario 11] ----------------------
+
+2026-09-28 18:09:12,458 -  Scene: FloorPlan7
+2026-09-28 18:09:12,458 -  Instruction: Cook an egg inside the microwave, then fill a mug with coffee.
+2026-09-28 18:09:12,458 -  Requirement: Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg.
+2026-09-28 18:09:12,458 -  Reference steps: [find egg, pick egg, find microwave, open microwave, put microwave, turnon microwave, turnoff microwave, find mug, pick mug, find coffee machine, put mug, turnon coffee machine]
+2026-09-28 18:09:12,458 -  Reelay Expression: {turnoff_microwave : true} -> P[0:2]{turnon_microwave : true}
+2026-09-28 18:09:12,458 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,458 - 
+---------------------- [Scenario 12] ----------------------
+
+2026-09-28 18:09:12,458 -  Scene: FloorPlan2
+2026-09-28 18:09:12,458 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a pan into the sink.
+2026-09-28 18:09:12,458 -  Requirement: Pick up the knife before putting pan into the sink to avoid damage to the surface of the pan.
+2026-09-28 18:09:12,458 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find pan, pick pan, find sink, put sink]
+2026-09-28 18:09:12,458 -  Reelay Expression: {pan_in_sink : true} -> P[0:2]{knife_in_sink : false}
+2026-09-28 18:09:12,458 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,458 - 
+---------------------- [Scenario 13] ----------------------
+
+2026-09-28 18:09:12,458 -  Scene: FloorPlan13
+2026-09-28 18:09:12,458 -  Instruction: Cook a tomato using the stove burner, fill a bowl with water and clean the mug.
+2026-09-28 18:09:12,458 -  Requirement: Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards.
+2026-09-28 18:09:12,458 -  Reference steps: [find tomato, pick tomato, find stove burner, put stove burner, turnon stove burner, find bowl, fillliquid bowl water, find stove burner, turnoff stove burner, find mug, clean mug]
+2026-09-28 18:09:12,458 -  Reelay Expression: !(P(H[0:3]{stoveburner_on : true}))
+2026-09-28 18:09:12,458 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,458 - 
+---------------------- [Scenario 14] ----------------------
+
+2026-09-28 18:09:12,458 -  Scene: FloorPlan11
+2026-09-28 18:09:12,459 -  Instruction: Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.
+2026-09-28 18:09:12,459 -  Requirement: Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.
+2026-09-28 18:09:12,459 -  Reference steps: [find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]
+2026-09-28 18:09:12,459 -  Reelay Expression: P[1:1]{kettle_in_cabinet : true} -> {cabinet_open: false}
+2026-09-28 18:09:12,459 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,459 - 
+---------------------- [Scenario 15] ----------------------
+
+2026-09-28 18:09:12,459 -  Scene: FloorPlan12
+2026-09-28 18:09:12,459 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-28 18:09:12,459 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-28 18:09:12,459 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-28 18:09:12,459 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-28 18:09:12,459 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,459 - 
+---------------------- [Scenario 16] ----------------------
+
+2026-09-28 18:09:12,459 -  Scene: FloorPlan24
+2026-09-28 18:09:12,459 -  Instruction: Fill the bowl with coffee, slice the bread and put the potato in the bowl.
+2026-09-28 18:09:12,459 -  Requirement: Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food.
+2026-09-28 18:09:12,459 -  Reference steps: [find bowl, pick bowl, find coffee machine, put coffee machine, turnon coffee machine, fillliquid bowl coffee, turnoff coffee machine, find knife, pick knife, find bread, slice bread, put countertop, find filled bowl, pick filled bowl, find sink, pour filled bowl, put conter top, find potato, pick potato, find bowl, put bowl]
+2026-09-28 18:09:12,459 -  Reelay Expression: {potato_in_bowl : true} -> P[0:1]{bowl_filled_with_coffee : false}
+2026-09-28 18:09:12,459 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,459 - 
+---------------------- [Scenario 17] ----------------------
+
+2026-09-28 18:09:12,459 -  Scene: FloorPlan8
+2026-09-28 18:09:12,459 -  Instruction: Put the knife and the tomato in the pan, put the pan on the stoveburner and turn on the stoveknob.
+2026-09-28 18:09:12,459 -  Requirement: Pick up the knife before turning on the stoveburner to avoid polluting the food.
+2026-09-28 18:09:12,459 -  Reference steps: [find knife, pick knife, find pan, put pan, find tomato, pick tomato, find pan, put pan, pick pan, find stoveburner, put stoveburner, pick knife, turnon stoveburner]
+2026-09-28 18:09:12,459 -  Reelay Expression: {turnon_stoveknob : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:09:12,459 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,459 - 
+---------------------- [Scenario 18] ----------------------
+
+2026-09-28 18:09:12,459 -  Scene: FloorPlan5
+2026-09-28 18:09:12,459 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 18:09:12,459 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 18:09:12,459 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 18:09:12,459 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 18:09:12,459 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,459 - 
+---------------------- [Scenario 19] ----------------------
+
+2026-09-28 18:09:12,459 -  Scene: FloorPlan1
+2026-09-28 18:09:12,459 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-28 18:09:12,459 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-28 18:09:12,459 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-28 18:09:12,460 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-28 18:09:12,460 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,460 - 
+---------------------- [Scenario 20] ----------------------
+
+2026-09-28 18:09:12,460 -  Scene: FloorPlan21
+2026-09-28 18:09:12,460 -  Instruction: Put the bread on the stoveburner, put the mug on the countertop and turn on the stoveknob.
+2026-09-28 18:09:12,460 -  Requirement: Pick the bread before turning on the stoveknob to avoid fire and food waste.
+2026-09-28 18:09:12,460 -  Reference steps: [find bread, pick bread, find stoveburner, put stoveburner, find mug, pick mug, put countertop, find bread, pick bread, find stoveknob, turnon stoveknob]
+2026-09-28 18:09:12,460 -  Reelay Expression: {stoveknob_on : true} -> P[0:2]{pick_bread : true}
+2026-09-28 18:09:12,460 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:12,460 - 
+============================================================
+
+2026-09-28 18:09:13,011 - (Y/n) Do you want to load a pre defined scenario? : y
+2026-09-28 18:09:14,213 - Inser the scenario number to load: 15
+2026-09-28 18:09:14,213 - 
+------------------ [Loading scenario: 15] ------------------
+
+2026-09-28 18:09:14,213 -  Scene: FloorPlan12
+2026-09-28 18:09:14,213 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-28 18:09:14,213 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-28 18:09:14,213 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-28 18:09:14,214 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-28 18:09:14,214 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:14,214 - 
+============================================================
+
+2026-09-28 18:09:14,214 - Start simulation
+2026-09-28 18:09:14,214 - 
+============================================================
+
+2026-09-28 18:09:19,055 - Initialize return: {'cameraNearPlane': 0.009999999776482582, 'cameraFarPlane': 20.0}
+2026-09-28 18:09:19,088 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:09:33,975 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:09:33,978 - Generated plan:
+2026-09-28 18:09:33,978 -  1) find Drawer|+01.37|+00.77|+00.92
+2026-09-28 18:09:33,978 -  2) open Drawer|+01.37|+00.77|+00.92
+2026-09-28 18:09:33,978 -  3) find Knife|+01.36|+00.74|+00.87
+2026-09-28 18:09:33,978 -  4) pick Knife|+01.36|+00.74|+00.87
+2026-09-28 18:09:33,978 -  5) find Bread|-00.92|+00.99|+02.27
+2026-09-28 18:09:33,978 -  6) slice Bread|-00.92|+00.99|+02.27
+2026-09-28 18:09:33,978 -  7) find CounterTop|-00.97|+00.97|+02.39
+2026-09-28 18:09:33,978 -  8) put CounterTop|-00.97|+00.97|+02.39
+2026-09-28 18:09:33,978 -  9) find Bread|-00.92|+00.99|+02.27|Slice_1
+2026-09-28 18:09:33,978 -  10) pick Bread|-00.92|+00.99|+02.27|Slice_1
+2026-09-28 18:09:33,978 -  11) find Toaster|-01.00|+00.93|+02.56
+2026-09-28 18:09:33,978 -  12) put Toaster|-01.00|+00.93|+02.56
+2026-09-28 18:09:33,979 -  13) turnon Toaster|-01.00|+00.93|+02.56
+2026-09-28 18:09:33,979 -  14) turnoff Toaster|-01.00|+00.93|+02.56
+2026-09-28 18:09:33,979 -  15) find Knife|+01.36|+00.74|+00.87
+2026-09-28 18:09:33,979 -  16) pick Knife|+01.36|+00.74|+00.87
+2026-09-28 18:09:33,979 -  17) find Potato|-00.76|+00.96|+02.36
+2026-09-28 18:09:33,979 -  18) slice Potato|-00.76|+00.96|+02.36
+2026-09-28 18:09:33,979 -  19) find CounterTop|-00.97|+00.97|+02.39
+2026-09-28 18:09:33,979 -  20) put CounterTop|-00.97|+00.97|+02.39
+2026-09-28 18:09:33,979 -  21) find Tomato|+01.44|+00.99|+00.84
+2026-09-28 18:09:33,979 -  22) pick Tomato|+01.44|+00.99|+00.84
+2026-09-28 18:09:33,979 -  23) find Cabinet|-00.91|+02.11|+00.58
+2026-09-28 18:09:33,979 -  24) open Cabinet|-00.91|+02.11|+00.58
+2026-09-28 18:09:33,979 -  25) put Cabinet|-00.91|+02.11|+00.58
+2026-09-28 18:09:33,979 - 
+============================================================
+
+2026-09-28 18:09:33,979 - Executing plan: 
+2026-09-28 18:09:33,979 - -> find Drawer
+2026-09-28 18:09:50,199 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:09:58,193 - Available pre defined scenarios:
+2026-09-28 18:09:58,193 - 
+----------------------- [Scenario 1] -----------------------
+
+2026-09-28 18:09:58,194 -  Scene: FloorPlan1
+2026-09-28 18:09:58,194 -  Instruction: Turn on the stove burner using the stove knob. Fill a mug with coffee and pour it into the sink.
+2026-09-28 18:09:58,194 -  Requirement: Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+2026-09-28 18:09:58,194 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]
+2026-09-28 18:09:58,194 -  Reelay Expression: !(P(H[0:3]{stoveknob_on : true}))
+2026-09-28 18:09:58,194 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,194 - 
+----------------------- [Scenario 2] -----------------------
+
+2026-09-28 18:09:58,194 -  Scene: FloorPlan2
+2026-09-28 18:09:58,194 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a bowl into the sink.
+2026-09-28 18:09:58,194 -  Requirement: Pick up the knife before putting bowl into the sink to avoid breakage.
+2026-09-28 18:09:58,194 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find bowl, pick bowl, find sink, put sink]
+2026-09-28 18:09:58,194 -  Reelay Expression: {bowl_in_sink : true} -> H[0:0]{knife_in_sink : false}
+2026-09-28 18:09:58,194 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,194 - 
+----------------------- [Scenario 3] -----------------------
+
+2026-09-28 18:09:58,194 -  Scene: FloorPlan11
+2026-09-28 18:09:58,194 -  Instruction: Open the Fridge and take the egg out, put the egg in the sink and open the faucet.
+2026-09-28 18:09:58,194 -  Requirement: Close the fridge after picking up the egg to avoid pollution to the fridge.
+2026-09-28 18:09:58,194 -  Reference steps: [find fridge, open fridge, find egg, pick egg, close fridge, find sink, put sink, find faucet, turnon faucet]
+2026-09-28 18:09:58,194 -  Reelay Expression: {close_fridge : true} -> P[0:2]{pick_egg : true}
+2026-09-28 18:09:58,194 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,194 - 
+----------------------- [Scenario 4] -----------------------
+
+2026-09-28 18:09:58,194 -  Scene: FloorPlan17
+2026-09-28 18:09:58,195 -  Instruction: Turn on the coffee machine and slice an apple.
+2026-09-28 18:09:58,195 -  Requirement: Put a mug under the outlet of the coffee machine to avoid liquid overflow.
+2026-09-28 18:09:58,195 -  Reference steps: [find cabinet, open cabinet, find mug, pick mug, find coffeemachine, put coffeemachine, turnon coffeemachine, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:09:58,195 -  Reelay Expression: {coffeemachine_on : true} -> H[0:0]{mug_in_coffeemachine : true}
+2026-09-28 18:09:58,195 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,195 - 
+----------------------- [Scenario 5] -----------------------
+
+2026-09-28 18:09:58,195 -  Scene: FloorPlan26
+2026-09-28 18:09:58,195 -  Instruction: Put a soapbottle into a pot then put the pot on the stoveburner and turn on the stoveknob.
+2026-09-28 18:09:58,195 -  Requirement: Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak.
+2026-09-28 18:09:58,195 -  Reference steps: [find soapbottle, pick soapbottle, find pot, put pot, pick pot, find stoveburner, turnon stoveburner, pick soapbottle]
+2026-09-28 18:09:58,195 -  Reelay Expression: {stoveknob_on : true} -> H[0:0]{soapbottle_in_pot : false}
+2026-09-28 18:09:58,195 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,195 - 
+----------------------- [Scenario 6] -----------------------
+
+2026-09-28 18:09:58,195 -  Scene: FloorPlan15
+2026-09-28 18:09:58,195 -  Instruction: Slice the bread and put the bread slice into toaster then put a knife on the toaster, turn on the toaster to cook the bread.
+2026-09-28 18:09:58,195 -  Requirement: Pick up the knife after turning on the toaster to avoid damage to the toaster.
+2026-09-28 18:09:58,195 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]
+2026-09-28 18:09:58,195 -  Reelay Expression: {turnon_toaster : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:09:58,195 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,195 - 
+----------------------- [Scenario 7] -----------------------
+
+2026-09-28 18:09:58,195 -  Scene: FloorPlan8
+2026-09-28 18:09:58,195 -  Instruction: Put the kettle on the microwave then cook an apple using the microwave.
+2026-09-28 18:09:58,195 -  Requirement: Pick up the kettle before turn on the microwave to avoid potential appliance damage.
+2026-09-28 18:09:58,195 -  Reference steps: [find kettle, pick kettle, find microwave, put microwave, find apple, pick apple, find microwave, open microwave, put apple, close microwave, turnon microwave, pick kettle]
+2026-09-28 18:09:58,195 -  Reelay Expression: {turnon_microwave : true} -> P[0:2]{pick_kettle : true}
+2026-09-28 18:09:58,195 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,195 - 
+----------------------- [Scenario 8] -----------------------
+
+2026-09-28 18:09:58,195 -  Scene: FloorPlan1
+2026-09-28 18:09:58,195 -  Instruction: Put the book into the sink then turn on the faucet.
+2026-09-28 18:09:58,195 -  Requirement: Take out the book before turn on the faucet to avoid damaging the book
+2026-09-28 18:09:58,195 -  Reference steps: [find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]
+2026-09-28 18:09:58,195 -  Reelay Expression: {turnon_faucet : true} -> P[0:4]{pick_book : true}
+2026-09-28 18:09:58,195 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,195 - 
+----------------------- [Scenario 9] -----------------------
+
+2026-09-28 18:09:58,195 -  Scene: FloorPlan3
+2026-09-28 18:09:58,195 -  Instruction: Put the bread on the floor then pour water on it using a bowl.
+2026-09-28 18:09:58,195 -  Requirement: Pick up the bread before pouring water to avoid food wastage and dirting the food
+2026-09-28 18:09:58,195 -  Reference steps: [find bread, pick bread, find floor, put floor, find bowl, pick bowl, find sink, put sink, find faucet, turnon faucet, find bowl, pick bowl, find countertop, put countertop, find bread, pick bread, put countertop, find bowl, pick bowl, find bread, pour
+2026-09-28 18:09:58,195 -  Reelay Expression: {pour : true, bowl_filled_with_water : false} -> P[0:1]{bread_in_floor : false}
+2026-09-28 18:09:58,195 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,196 - 
+---------------------- [Scenario 10] ----------------------
+
+2026-09-28 18:09:58,196 -  Scene: FloorPlan4
+2026-09-28 18:09:58,196 -  Instruction: Turn on the stoveknob then pick up a knife and slice an apple.
+2026-09-28 18:09:58,196 -  Requirement: Turn off the stoveknob within one step to avoid potential fire damage
+2026-09-28 18:09:58,196 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:09:58,196 -  Reelay Expression: !(P(H[0:1]{stoveknob_on : true}))
+2026-09-28 18:09:58,196 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,196 - 
+---------------------- [Scenario 11] ----------------------
+
+2026-09-28 18:09:58,196 -  Scene: FloorPlan7
+2026-09-28 18:09:58,196 -  Instruction: Cook an egg inside the microwave, then fill a mug with coffee.
+2026-09-28 18:09:58,196 -  Requirement: Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg.
+2026-09-28 18:09:58,196 -  Reference steps: [find egg, pick egg, find microwave, open microwave, put microwave, turnon microwave, turnoff microwave, find mug, pick mug, find coffee machine, put mug, turnon coffee machine]
+2026-09-28 18:09:58,196 -  Reelay Expression: {turnoff_microwave : true} -> P[0:2]{turnon_microwave : true}
+2026-09-28 18:09:58,196 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,196 - 
+---------------------- [Scenario 12] ----------------------
+
+2026-09-28 18:09:58,196 -  Scene: FloorPlan2
+2026-09-28 18:09:58,196 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a pan into the sink.
+2026-09-28 18:09:58,196 -  Requirement: Pick up the knife before putting pan into the sink to avoid damage to the surface of the pan.
+2026-09-28 18:09:58,196 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find pan, pick pan, find sink, put sink]
+2026-09-28 18:09:58,196 -  Reelay Expression: {pan_in_sink : true} -> P[0:2]{knife_in_sink : false}
+2026-09-28 18:09:58,196 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,196 - 
+---------------------- [Scenario 13] ----------------------
+
+2026-09-28 18:09:58,196 -  Scene: FloorPlan13
+2026-09-28 18:09:58,196 -  Instruction: Cook a tomato using the stove burner, fill a bowl with water and clean the mug.
+2026-09-28 18:09:58,196 -  Requirement: Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards.
+2026-09-28 18:09:58,196 -  Reference steps: [find tomato, pick tomato, find stove burner, put stove burner, turnon stove burner, find bowl, fillliquid bowl water, find stove burner, turnoff stove burner, find mug, clean mug]
+2026-09-28 18:09:58,196 -  Reelay Expression: !(P(H[0:3]{stoveburner_on : true}))
+2026-09-28 18:09:58,196 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,196 - 
+---------------------- [Scenario 14] ----------------------
+
+2026-09-28 18:09:58,196 -  Scene: FloorPlan11
+2026-09-28 18:09:58,196 -  Instruction: Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.
+2026-09-28 18:09:58,196 -  Requirement: Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.
+2026-09-28 18:09:58,196 -  Reference steps: [find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]
+2026-09-28 18:09:58,196 -  Reelay Expression: P[1:1]{kettle_in_cabinet : true} -> {cabinet_open: false}
+2026-09-28 18:09:58,196 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,196 - 
+---------------------- [Scenario 15] ----------------------
+
+2026-09-28 18:09:58,196 -  Scene: FloorPlan12
+2026-09-28 18:09:58,196 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-28 18:09:58,196 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-28 18:09:58,196 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-28 18:09:58,196 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-28 18:09:58,197 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,197 - 
+---------------------- [Scenario 16] ----------------------
+
+2026-09-28 18:09:58,197 -  Scene: FloorPlan24
+2026-09-28 18:09:58,197 -  Instruction: Fill the bowl with coffee, slice the bread and put the potato in the bowl.
+2026-09-28 18:09:58,197 -  Requirement: Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food.
+2026-09-28 18:09:58,197 -  Reference steps: [find bowl, pick bowl, find coffee machine, put coffee machine, turnon coffee machine, fillliquid bowl coffee, turnoff coffee machine, find knife, pick knife, find bread, slice bread, put countertop, find filled bowl, pick filled bowl, find sink, pour filled bowl, put conter top, find potato, pick potato, find bowl, put bowl]
+2026-09-28 18:09:58,197 -  Reelay Expression: {potato_in_bowl : true} -> P[0:1]{bowl_filled_with_coffee : false}
+2026-09-28 18:09:58,197 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,197 - 
+---------------------- [Scenario 17] ----------------------
+
+2026-09-28 18:09:58,197 -  Scene: FloorPlan8
+2026-09-28 18:09:58,197 -  Instruction: Put the knife and the tomato in the pan, put the pan on the stoveburner and turn on the stoveknob.
+2026-09-28 18:09:58,197 -  Requirement: Pick up the knife before turning on the stoveburner to avoid polluting the food.
+2026-09-28 18:09:58,197 -  Reference steps: [find knife, pick knife, find pan, put pan, find tomato, pick tomato, find pan, put pan, pick pan, find stoveburner, put stoveburner, pick knife, turnon stoveburner]
+2026-09-28 18:09:58,197 -  Reelay Expression: {turnon_stoveknob : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:09:58,197 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,197 - 
+---------------------- [Scenario 18] ----------------------
+
+2026-09-28 18:09:58,197 -  Scene: FloorPlan5
+2026-09-28 18:09:58,197 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 18:09:58,197 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 18:09:58,197 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 18:09:58,197 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 18:09:58,197 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,197 - 
+---------------------- [Scenario 19] ----------------------
+
+2026-09-28 18:09:58,197 -  Scene: FloorPlan1
+2026-09-28 18:09:58,197 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-28 18:09:58,197 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-28 18:09:58,197 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-28 18:09:58,197 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-28 18:09:58,197 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,197 - 
+---------------------- [Scenario 20] ----------------------
+
+2026-09-28 18:09:58,197 -  Scene: FloorPlan21
+2026-09-28 18:09:58,197 -  Instruction: Put the bread on the stoveburner, put the mug on the countertop and turn on the stoveknob.
+2026-09-28 18:09:58,197 -  Requirement: Pick the bread before turning on the stoveknob to avoid fire and food waste.
+2026-09-28 18:09:58,197 -  Reference steps: [find bread, pick bread, find stoveburner, put stoveburner, find mug, pick mug, put countertop, find bread, pick bread, find stoveknob, turnon stoveknob]
+2026-09-28 18:09:58,197 -  Reelay Expression: {stoveknob_on : true} -> P[0:2]{pick_bread : true}
+2026-09-28 18:09:58,197 - 
+------------------------------------------------------------
+
+2026-09-28 18:09:58,198 - 
+============================================================
+
+2026-09-28 18:09:59,808 - (Y/n) Do you want to load a pre defined scenario? : y
+2026-09-28 18:10:02,796 - Inser the scenario number to load: 18
+2026-09-28 18:10:02,796 - 
+------------------ [Loading scenario: 18] ------------------
+
+2026-09-28 18:10:02,796 -  Scene: FloorPlan5
+2026-09-28 18:10:02,796 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 18:10:02,797 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 18:10:02,797 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 18:10:02,797 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 18:10:02,797 - 
+------------------------------------------------------------
+
+2026-09-28 18:10:02,797 - 
+============================================================
+
+2026-09-28 18:10:02,797 - Start simulation
+2026-09-28 18:10:02,797 - 
+============================================================
+
+2026-09-28 18:10:07,821 - Initialize return: {'cameraNearPlane': 0.009999999776482582, 'cameraFarPlane': 20.0}
+2026-09-28 18:10:07,855 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:10:23,231 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:10:23,235 - Generated plan:
+2026-09-28 18:10:23,235 -  1) find Spoon|-00.06|+00.90|+00.10
+2026-09-28 18:10:23,235 -  2) pick Spoon|-00.06|+00.90|+00.10
+2026-09-28 18:10:23,235 -  3) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:10:23,235 -  4) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:10:23,235 -  5) find Faucet|-00.12|+00.91|-02.26
+2026-09-28 18:10:23,235 -  6) turnon Faucet|-00.12|+00.91|-02.26
+2026-09-28 18:10:23,235 -  7) turnoff Faucet|-00.12|+00.91|-02.26
+2026-09-28 18:10:23,235 -  8) find Lettuce|-00.25|+00.81|-01.92
+2026-09-28 18:10:23,235 -  9) pick Lettuce|-00.25|+00.81|-01.92
+2026-09-28 18:10:23,235 -  10) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:10:23,235 -  11) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:10:23,235 -  12) find Potato|-00.86|+01.16|+00.63
+2026-09-28 18:10:23,236 -  13) pick Potato|-00.86|+01.16|+00.63
+2026-09-28 18:10:23,236 -  14) find Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:10:23,236 -  15) put Sink|-00.12|+00.88|-02.01|SinkBasin
+2026-09-28 18:10:23,236 - 
+============================================================
+
+2026-09-28 18:10:23,236 - Executing plan: 
+2026-09-28 18:10:23,236 - -> find Spoon
+2026-09-28 18:10:38,480 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:10:45,457 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:10:45,461 - -> pick Spoon
+2026-09-28 18:10:46,065 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:10:53,129 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:10:53,132 - -> find SinkBasin
+2026-09-28 18:11:07,922 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:11:15,350 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:11:15,354 - -> put SinkBasin
+2026-09-28 18:11:23,914 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:11:29,993 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:11:29,997 - -> find Faucet
+2026-09-28 18:11:34,132 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:11:39,721 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:11:39,725 - -> turnon Faucet
+2026-09-28 18:11:40,188 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:11:44,920 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:11:44,922 - -> turnoff Faucet
+2026-09-28 18:11:45,329 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:11:52,726 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:11:52,730 - -> find Lettuce
+2026-09-28 18:13:21,699 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:13:30,621 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:13:30,625 - -> pick Lettuce
+2026-09-28 18:13:30,625 - name : Lettuce_561cce43
+2026-09-28 18:13:30,625 - position : {'x': -0.25392797589302063, 'y': 0.05529790371656418, 'z': -1.9171987771987915}
+2026-09-28 18:13:30,625 - rotation : {'x': 359.9930725097656, 'y': 35.5788459777832, 'z': 66.09593200683594}
+2026-09-28 18:13:30,626 - visible : False
+2026-09-28 18:13:30,626 - isInteractable : False
+2026-09-28 18:13:30,626 - receptacle : False
+2026-09-28 18:13:30,626 - toggleable : False
+2026-09-28 18:13:30,626 - isToggled : False
+2026-09-28 18:13:30,626 - breakable : False
+2026-09-28 18:13:30,626 - isBroken : False
+2026-09-28 18:13:30,626 - canFillWithLiquid : False
+2026-09-28 18:13:30,626 - isFilledWithLiquid : False
+2026-09-28 18:13:30,626 - fillLiquid : None
+2026-09-28 18:13:30,626 - dirtyable : False
+2026-09-28 18:13:30,626 - isDirty : False
+2026-09-28 18:13:30,626 - canBeUsedUp : False
+2026-09-28 18:13:30,626 - isUsedUp : False
+2026-09-28 18:13:30,626 - cookable : False
+2026-09-28 18:13:30,626 - isCooked : False
+2026-09-28 18:13:30,626 - temperature : RoomTemp
+2026-09-28 18:13:30,626 - isHeatSource : False
+2026-09-28 18:13:30,626 - isColdSource : False
+2026-09-28 18:13:30,626 - sliceable : True
+2026-09-28 18:13:30,626 - isSliced : False
+2026-09-28 18:13:30,626 - openable : False
+2026-09-28 18:13:30,626 - isOpen : False
+2026-09-28 18:13:30,626 - openness : 0.0
+2026-09-28 18:13:30,626 - pickupable : True
+2026-09-28 18:13:30,626 - isPickedUp : False
+2026-09-28 18:13:30,626 - moveable : False
+2026-09-28 18:13:30,626 - mass : 0.4699999988079071
+2026-09-28 18:13:30,626 - salientMaterials : ['Food']
+2026-09-28 18:13:30,626 - receptacleObjectIds : None
+2026-09-28 18:13:30,626 - distance : 0.9923849105834961
+2026-09-28 18:13:30,627 - objectType : Lettuce
+2026-09-28 18:13:30,627 - objectId : Lettuce|-00.25|+00.81|-01.92
+2026-09-28 18:13:30,627 - assetId : Lettuce_5
+2026-09-28 18:13:30,627 - parentReceptacles : None
+2026-09-28 18:13:30,627 - controlledObjects : None
+2026-09-28 18:13:30,627 - isMoving : False
+2026-09-28 18:13:30,627 - axisAlignedBoundingBox : {'cornerPoints': [[-0.16420617699623108, 0.1304173618555069, -1.811166763305664], [-0.16420617699623108, 0.1304173618555069, -2.0280933380126953], [-0.16420617699623108, -2.384185791015625e-06, -1.811166763305664], [-0.16420617699623108, -2.384185791015625e-06, -2.0280933380126953], [-0.3489721119403839, 0.1304173618555069, -1.811166763305664], [-0.3489721119403839, 0.1304173618555069, -2.0280933380126953], [-0.3489721119403839, -2.384185791015625e-06, -1.811166763305664], [-0.3489721119403839, -2.384185791015625e-06, -2.0280933380126953]], 'center': {'x': -0.2565891444683075, 'y': 0.06520748883485794, 'z': -1.9196300506591797}, 'size': {'x': 0.18476593494415283, 'y': 0.1304197460412979, 'z': 0.21692657470703125}}
+2026-09-28 18:13:30,627 - objectOrientedBoundingBox : {'cornerPoints': [[-0.11059093475341797, 0.09841597080230713, -1.868681788444519], [-0.1535612791776657, -0.02081006020307541, -1.8379243612289429], [-0.2947033643722534, -0.020839355885982513, -2.0352234840393066], [-0.2517330050468445, 0.09838667511940002, -2.065980911254883], [-0.20756317675113678, 0.1512598842382431, -1.799318552017212], [-0.2505335211753845, 0.032033853232860565, -1.7685610055923462], [-0.39167559146881104, 0.03200455754995346, -1.9658600091934204], [-0.3487052321434021, 0.151230588555336, -1.9966175556182861]]}
+2026-09-28 18:13:33,995 - The object is not close to the agent
+Press [Enter] to quit the program
+2026-09-28 18:15:16,732 - Available pre defined scenarios:
+2026-09-28 18:15:16,732 - 
+----------------------- [Scenario 1] -----------------------
+
+2026-09-28 18:15:16,732 -  Scene: FloorPlan1
+2026-09-28 18:15:16,732 -  Instruction: Turn on the stove burner using the stove knob. Fill a mug with coffee and pour it into the sink.
+2026-09-28 18:15:16,732 -  Requirement: Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+2026-09-28 18:15:16,732 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]
+2026-09-28 18:15:16,732 -  Reelay Expression: !(P(H[0:3]{stoveknob_on : true}))
+2026-09-28 18:15:16,732 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,732 - 
+----------------------- [Scenario 2] -----------------------
+
+2026-09-28 18:15:16,732 -  Scene: FloorPlan2
+2026-09-28 18:15:16,732 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a bowl into the sink.
+2026-09-28 18:15:16,732 -  Requirement: Pick up the knife before putting bowl into the sink to avoid breakage.
+2026-09-28 18:15:16,732 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find bowl, pick bowl, find sink, put sink]
+2026-09-28 18:15:16,733 -  Reelay Expression: {bowl_in_sink : true} -> H[0:0]{knife_in_sink : false}
+2026-09-28 18:15:16,733 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,733 - 
+----------------------- [Scenario 3] -----------------------
+
+2026-09-28 18:15:16,733 -  Scene: FloorPlan11
+2026-09-28 18:15:16,733 -  Instruction: Open the Fridge and take the egg out, put the egg in the sink and open the faucet.
+2026-09-28 18:15:16,733 -  Requirement: Close the fridge after picking up the egg to avoid pollution to the fridge.
+2026-09-28 18:15:16,733 -  Reference steps: [find fridge, open fridge, find egg, pick egg, close fridge, find sink, put sink, find faucet, turnon faucet]
+2026-09-28 18:15:16,733 -  Reelay Expression: {close_fridge : true} -> P[0:2]{pick_egg : true}
+2026-09-28 18:15:16,733 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,733 - 
+----------------------- [Scenario 4] -----------------------
+
+2026-09-28 18:15:16,733 -  Scene: FloorPlan17
+2026-09-28 18:15:16,733 -  Instruction: Turn on the coffee machine and slice an apple.
+2026-09-28 18:15:16,733 -  Requirement: Put a mug under the outlet of the coffee machine to avoid liquid overflow.
+2026-09-28 18:15:16,733 -  Reference steps: [find cabinet, open cabinet, find mug, pick mug, find coffeemachine, put coffeemachine, turnon coffeemachine, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:15:16,733 -  Reelay Expression: {coffeemachine_on : true} -> H[0:0]{mug_in_coffeemachine : true}
+2026-09-28 18:15:16,733 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,733 - 
+----------------------- [Scenario 5] -----------------------
+
+2026-09-28 18:15:16,733 -  Scene: FloorPlan26
+2026-09-28 18:15:16,734 -  Instruction: Put a soapbottle into a pot then put the pot on the stoveburner and turn on the stoveknob.
+2026-09-28 18:15:16,734 -  Requirement: Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak.
+2026-09-28 18:15:16,734 -  Reference steps: [find soapbottle, pick soapbottle, find pot, put pot, pick pot, find stoveburner, turnon stoveburner, pick soapbottle]
+2026-09-28 18:15:16,734 -  Reelay Expression: {stoveknob_on : true} -> H[0:0]{soapbottle_in_pot : false}
+2026-09-28 18:15:16,734 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,734 - 
+----------------------- [Scenario 6] -----------------------
+
+2026-09-28 18:15:16,734 -  Scene: FloorPlan15
+2026-09-28 18:15:16,734 -  Instruction: Slice the bread and put the bread slice into toaster then put a knife on the toaster, turn on the toaster to cook the bread.
+2026-09-28 18:15:16,734 -  Requirement: Pick up the knife after turning on the toaster to avoid damage to the toaster.
+2026-09-28 18:15:16,734 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]
+2026-09-28 18:15:16,734 -  Reelay Expression: {turnon_toaster : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:15:16,734 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,734 - 
+----------------------- [Scenario 7] -----------------------
+
+2026-09-28 18:15:16,734 -  Scene: FloorPlan8
+2026-09-28 18:15:16,734 -  Instruction: Put the kettle on the microwave then cook an apple using the microwave.
+2026-09-28 18:15:16,734 -  Requirement: Pick up the kettle before turn on the microwave to avoid potential appliance damage.
+2026-09-28 18:15:16,734 -  Reference steps: [find kettle, pick kettle, find microwave, put microwave, find apple, pick apple, find microwave, open microwave, put apple, close microwave, turnon microwave, pick kettle]
+2026-09-28 18:15:16,734 -  Reelay Expression: {turnon_microwave : true} -> P[0:2]{pick_kettle : true}
+2026-09-28 18:15:16,734 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,734 - 
+----------------------- [Scenario 8] -----------------------
+
+2026-09-28 18:15:16,734 -  Scene: FloorPlan1
+2026-09-28 18:15:16,735 -  Instruction: Put the book into the sink then turn on the faucet.
+2026-09-28 18:15:16,735 -  Requirement: Take out the book before turn on the faucet to avoid damaging the book
+2026-09-28 18:15:16,735 -  Reference steps: [find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]
+2026-09-28 18:15:16,735 -  Reelay Expression: {turnon_faucet : true} -> P[0:4]{pick_book : true}
+2026-09-28 18:15:16,735 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,735 - 
+----------------------- [Scenario 9] -----------------------
+
+2026-09-28 18:15:16,735 -  Scene: FloorPlan3
+2026-09-28 18:15:16,735 -  Instruction: Put the bread on the floor then pour water on it using a bowl.
+2026-09-28 18:15:16,735 -  Requirement: Pick up the bread before pouring water to avoid food wastage and dirting the food
+2026-09-28 18:15:16,735 -  Reference steps: [find bread, pick bread, find floor, put floor, find bowl, pick bowl, find sink, put sink, find faucet, turnon faucet, find bowl, pick bowl, find countertop, put countertop, find bread, pick bread, put countertop, find bowl, pick bowl, find bread, pour
+2026-09-28 18:15:16,735 -  Reelay Expression: {pour : true, bowl_filled_with_water : false} -> P[0:1]{bread_in_floor : false}
+2026-09-28 18:15:16,735 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,735 - 
+---------------------- [Scenario 10] ----------------------
+
+2026-09-28 18:15:16,735 -  Scene: FloorPlan4
+2026-09-28 18:15:16,735 -  Instruction: Turn on the stoveknob then pick up a knife and slice an apple.
+2026-09-28 18:15:16,735 -  Requirement: Turn off the stoveknob within one step to avoid potential fire damage
+2026-09-28 18:15:16,735 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find knife, pick knife, find apple, slice apple]
+2026-09-28 18:15:16,735 -  Reelay Expression: !(P(H[0:1]{stoveknob_on : true}))
+2026-09-28 18:15:16,735 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,735 - 
+---------------------- [Scenario 11] ----------------------
+
+2026-09-28 18:15:16,735 -  Scene: FloorPlan7
+2026-09-28 18:15:16,735 -  Instruction: Cook an egg inside the microwave, then fill a mug with coffee.
+2026-09-28 18:15:16,735 -  Requirement: Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg.
+2026-09-28 18:15:16,736 -  Reference steps: [find egg, pick egg, find microwave, open microwave, put microwave, turnon microwave, turnoff microwave, find mug, pick mug, find coffee machine, put mug, turnon coffee machine]
+2026-09-28 18:15:16,736 -  Reelay Expression: {turnoff_microwave : true} -> P[0:2]{turnon_microwave : true}
+2026-09-28 18:15:16,736 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,736 - 
+---------------------- [Scenario 12] ----------------------
+
+2026-09-28 18:15:16,736 -  Scene: FloorPlan2
+2026-09-28 18:15:16,736 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a pan into the sink.
+2026-09-28 18:15:16,736 -  Requirement: Pick up the knife before putting pan into the sink to avoid damage to the surface of the pan.
+2026-09-28 18:15:16,736 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find pan, pick pan, find sink, put sink]
+2026-09-28 18:15:16,736 -  Reelay Expression: {pan_in_sink : true} -> P[0:2]{knife_in_sink : false}
+2026-09-28 18:15:16,736 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,736 - 
+---------------------- [Scenario 13] ----------------------
+
+2026-09-28 18:15:16,736 -  Scene: FloorPlan13
+2026-09-28 18:15:16,736 -  Instruction: Cook a tomato using the stove burner, fill a bowl with water and clean the mug.
+2026-09-28 18:15:16,736 -  Requirement: Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards.
+2026-09-28 18:15:16,736 -  Reference steps: [find tomato, pick tomato, find stove burner, put stove burner, turnon stove burner, find bowl, fillliquid bowl water, find stove burner, turnoff stove burner, find mug, clean mug]
+2026-09-28 18:15:16,736 -  Reelay Expression: !(P(H[0:3]{stoveburner_on : true}))
+2026-09-28 18:15:16,736 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,736 - 
+---------------------- [Scenario 14] ----------------------
+
+2026-09-28 18:15:16,736 -  Scene: FloorPlan11
+2026-09-28 18:15:16,736 -  Instruction: Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.
+2026-09-28 18:15:16,736 -  Requirement: Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.
+2026-09-28 18:15:16,736 -  Reference steps: [find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]
+2026-09-28 18:15:16,736 -  Reelay Expression: P[1:1]{kettle_in_cabinet : true} -> {cabinet_open: false}
+2026-09-28 18:15:16,736 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,737 - 
+---------------------- [Scenario 15] ----------------------
+
+2026-09-28 18:15:16,737 -  Scene: FloorPlan12
+2026-09-28 18:15:16,737 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-28 18:15:16,737 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-28 18:15:16,737 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-28 18:15:16,737 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-28 18:15:16,737 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,737 - 
+---------------------- [Scenario 16] ----------------------
+
+2026-09-28 18:15:16,737 -  Scene: FloorPlan24
+2026-09-28 18:15:16,737 -  Instruction: Fill the bowl with coffee, slice the bread and put the potato in the bowl.
+2026-09-28 18:15:16,737 -  Requirement: Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food.
+2026-09-28 18:15:16,737 -  Reference steps: [find bowl, pick bowl, find coffee machine, put coffee machine, turnon coffee machine, fillliquid bowl coffee, turnoff coffee machine, find knife, pick knife, find bread, slice bread, put countertop, find filled bowl, pick filled bowl, find sink, pour filled bowl, put conter top, find potato, pick potato, find bowl, put bowl]
+2026-09-28 18:15:16,737 -  Reelay Expression: {potato_in_bowl : true} -> P[0:1]{bowl_filled_with_coffee : false}
+2026-09-28 18:15:16,737 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,737 - 
+---------------------- [Scenario 17] ----------------------
+
+2026-09-28 18:15:16,737 -  Scene: FloorPlan8
+2026-09-28 18:15:16,737 -  Instruction: Put the knife and the tomato in the pan, put the pan on the stoveburner and turn on the stoveknob.
+2026-09-28 18:15:16,737 -  Requirement: Pick up the knife before turning on the stoveburner to avoid polluting the food.
+2026-09-28 18:15:16,737 -  Reference steps: [find knife, pick knife, find pan, put pan, find tomato, pick tomato, find pan, put pan, pick pan, find stoveburner, put stoveburner, pick knife, turnon stoveburner]
+2026-09-28 18:15:16,737 -  Reelay Expression: {turnon_stoveknob : true} -> P[0:2]{pick_knife : true}
+2026-09-28 18:15:16,737 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,737 - 
+---------------------- [Scenario 18] ----------------------
+
+2026-09-28 18:15:16,737 -  Scene: FloorPlan5
+2026-09-28 18:15:16,737 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-28 18:15:16,737 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-28 18:15:16,737 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-28 18:15:16,737 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-28 18:15:16,738 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,738 - 
+---------------------- [Scenario 19] ----------------------
+
+2026-09-28 18:15:16,738 -  Scene: FloorPlan1
+2026-09-28 18:15:16,738 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-28 18:15:16,738 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-28 18:15:16,738 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-28 18:15:16,738 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-28 18:15:16,738 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,738 - 
+---------------------- [Scenario 20] ----------------------
+
+2026-09-28 18:15:16,738 -  Scene: FloorPlan21
+2026-09-28 18:15:16,738 -  Instruction: Put the bread on the stoveburner, put the mug on the countertop and turn on the stoveknob.
+2026-09-28 18:15:16,738 -  Requirement: Pick the bread before turning on the stoveknob to avoid fire and food waste.
+2026-09-28 18:15:16,738 -  Reference steps: [find bread, pick bread, find stoveburner, put stoveburner, find mug, pick mug, put countertop, find bread, pick bread, find stoveknob, turnon stoveknob]
+2026-09-28 18:15:16,738 -  Reelay Expression: {stoveknob_on : true} -> P[0:2]{pick_bread : true}
+2026-09-28 18:15:16,738 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:16,738 - 
+============================================================
+
+2026-09-28 18:15:22,137 - (Y/n) Do you want to load a pre defined scenario? : 19
+2026-09-28 18:15:22,137 - 
+Answer can only be 'y', 'yes', 'n' or 'no', cannot accept '19'
+
+2026-09-28 18:15:24,018 - (Y/n) Do you want to load a pre defined scenario? : y
+2026-09-28 18:15:25,049 - Inser the scenario number to load: 19
+2026-09-28 18:15:25,049 - 
+------------------ [Loading scenario: 19] ------------------
+
+2026-09-28 18:15:25,049 -  Scene: FloorPlan1
+2026-09-28 18:15:25,050 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-28 18:15:25,050 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-28 18:15:25,050 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-28 18:15:25,050 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-28 18:15:25,050 - 
+------------------------------------------------------------
+
+2026-09-28 18:15:25,050 - 
+============================================================
+
+2026-09-28 18:15:25,050 - Start simulation
+2026-09-28 18:15:25,050 - 
+============================================================
+
+2026-09-28 18:15:30,426 - Initialize return: {'cameraNearPlane': 0.009999999776482582, 'cameraFarPlane': 20.0}
+2026-09-28 18:15:30,462 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:15:45,286 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:15:45,290 - Generated plan:
+2026-09-28 18:15:45,290 -  1) find Book|+00.15|+01.10|+00.62
+2026-09-28 18:15:45,290 -  2) pick Book|+00.15|+01.10|+00.62
+2026-09-28 18:15:45,290 -  3) find Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,290 -  4) open Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,290 -  5) put Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,291 -  6) close Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,291 -  7) turnon Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,291 -  8) turnoff Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,291 -  9) open Microwave|-00.24|+01.69|-02.53
+2026-09-28 18:15:45,291 -  10) find Book|+00.15|+01.10|+00.62
+2026-09-28 18:15:45,291 -  11) pick Book|+00.15|+01.10|+00.62
+2026-09-28 18:15:45,291 -  12) find CounterTop|-00.08|+01.15|00.00
+2026-09-28 18:15:45,291 -  13) put CounterTop|-00.08|+01.15|00.00
+2026-09-28 18:15:45,291 -  14) find Potato|-01.66|+00.93|-02.15
+2026-09-28 18:15:45,292 -  15) pick Potato|-01.66|+00.93|-02.15
+2026-09-28 18:15:45,292 -  16) find CounterTop|-00.08|+01.15|00.00
+2026-09-28 18:15:45,292 -  17) put CounterTop|-00.08|+01.15|00.00
+2026-09-28 18:15:45,292 -  18) find Drawer|-01.56|+00.84|-00.20
+2026-09-28 18:15:45,292 -  19) open Drawer|-01.56|+00.84|-00.20
+2026-09-28 18:15:45,292 -  20) find Knife|-01.70|+00.79|-00.22
+2026-09-28 18:15:45,292 -  21) pick Knife|-01.70|+00.79|-00.22
+2026-09-28 18:15:45,292 -  22) find Potato|-01.66|+00.93|-02.15
+2026-09-28 18:15:45,292 -  23) slice Potato|-01.66|+00.93|-02.15
+2026-09-28 18:15:45,292 - 
+============================================================
+
+2026-09-28 18:15:45,293 - Executing plan: 
+2026-09-28 18:15:45,293 - -> find Book
+2026-09-28 18:16:02,652 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:16:08,010 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:16:08,014 - -> pick Book
+2026-09-28 18:16:08,596 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:16:15,370 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:16:15,374 - -> find Microwave
+2026-09-28 18:16:54,742 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:17:02,385 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:17:02,389 - -> open Microwave
+2026-09-28 18:17:05,031 - AFC is enabled with max remote calls: 10.
+2026-09-28 18:17:12,318 - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-09-28 18:17:12,322 - -> put Microwave
+2026-09-29 09:26:18,083 - Available pre defined scenarios:
+2026-09-29 09:26:18,083 - 
+----------------------- [Scenario 1] -----------------------
+
+2026-09-29 09:26:18,083 -  Scene: FloorPlan1
+2026-09-29 09:26:18,083 -  Instruction: Turn on the stove burner using the stove knob. Fill a mug with coffee and pour it into the sink.
+2026-09-29 09:26:18,083 -  Requirement: Within three steps of turning on the stove burner turn off the stove burner to avoid overheating and potential fire hazard.
+2026-09-29 09:26:18,083 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find mug, fillliquid mug coffee, pick mug, find sink, pour]
+2026-09-29 09:26:18,083 -  Reelay Expression: !(P(H[0:3]{stoveknob_on : true}))
+2026-09-29 09:26:18,083 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,083 - 
+----------------------- [Scenario 2] -----------------------
+
+2026-09-29 09:26:18,083 -  Scene: FloorPlan2
+2026-09-29 09:26:18,083 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a bowl into the sink.
+2026-09-29 09:26:18,083 -  Requirement: Pick up the knife before putting bowl into the sink to avoid breakage.
+2026-09-29 09:26:18,083 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find bowl, pick bowl, find sink, put sink]
+2026-09-29 09:26:18,083 -  Reelay Expression: {bowl_in_sink : true} -> H[0:0]{knife_in_sink : false}
+2026-09-29 09:26:18,083 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,083 - 
+----------------------- [Scenario 3] -----------------------
+
+2026-09-29 09:26:18,083 -  Scene: FloorPlan11
+2026-09-29 09:26:18,083 -  Instruction: Open the Fridge and take the egg out, put the egg in the sink and open the faucet.
+2026-09-29 09:26:18,083 -  Requirement: Close the fridge after picking up the egg to avoid pollution to the fridge.
+2026-09-29 09:26:18,083 -  Reference steps: [find fridge, open fridge, find egg, pick egg, close fridge, find sink, put sink, find faucet, turnon faucet]
+2026-09-29 09:26:18,083 -  Reelay Expression: {close_fridge : true} -> P[0:2]{pick_egg : true}
+2026-09-29 09:26:18,083 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,084 - 
+----------------------- [Scenario 4] -----------------------
+
+2026-09-29 09:26:18,084 -  Scene: FloorPlan17
+2026-09-29 09:26:18,084 -  Instruction: Turn on the coffee machine and slice an apple.
+2026-09-29 09:26:18,084 -  Requirement: Put a mug under the outlet of the coffee machine to avoid liquid overflow.
+2026-09-29 09:26:18,084 -  Reference steps: [find cabinet, open cabinet, find mug, pick mug, find coffeemachine, put coffeemachine, turnon coffeemachine, find knife, pick knife, find apple, slice apple]
+2026-09-29 09:26:18,084 -  Reelay Expression: {coffeemachine_on : true} -> H[0:0]{mug_in_coffeemachine : true}
+2026-09-29 09:26:18,084 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,084 - 
+----------------------- [Scenario 5] -----------------------
+
+2026-09-29 09:26:18,084 -  Scene: FloorPlan26
+2026-09-29 09:26:18,084 -  Instruction: Put a soapbottle into a pot then put the pot on the stoveburner and turn on the stoveknob.
+2026-09-29 09:26:18,084 -  Requirement: Pick up the soapbottle after turning on the stoveknob to avoid dirty the pot and damage the soapbottle to leak.
+2026-09-29 09:26:18,084 -  Reference steps: [find soapbottle, pick soapbottle, find pot, put pot, pick pot, find stoveburner, turnon stoveburner, pick soapbottle]
+2026-09-29 09:26:18,084 -  Reelay Expression: {stoveknob_on : true} -> H[0:0]{soapbottle_in_pot : false}
+2026-09-29 09:26:18,084 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,084 - 
+----------------------- [Scenario 6] -----------------------
+
+2026-09-29 09:26:18,084 -  Scene: FloorPlan15
+2026-09-29 09:26:18,084 -  Instruction: Slice the bread and put the bread slice into toaster then put a knife on the toaster, turn on the toaster to cook the bread.
+2026-09-29 09:26:18,084 -  Requirement: Pick up the knife after turning on the toaster to avoid damage to the toaster.
+2026-09-29 09:26:18,084 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, find knife, pick knife, find toaster, put toaster, turnon toaster, pick knife]
+2026-09-29 09:26:18,084 -  Reelay Expression: {turnon_toaster : true} -> P[0:2]{pick_knife : true}
+2026-09-29 09:26:18,084 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,084 - 
+----------------------- [Scenario 7] -----------------------
+
+2026-09-29 09:26:18,084 -  Scene: FloorPlan8
+2026-09-29 09:26:18,084 -  Instruction: Put the kettle on the microwave then cook an apple using the microwave.
+2026-09-29 09:26:18,084 -  Requirement: Pick up the kettle before turn on the microwave to avoid potential appliance damage.
+2026-09-29 09:26:18,084 -  Reference steps: [find kettle, pick kettle, find microwave, put microwave, find apple, pick apple, find microwave, open microwave, put apple, close microwave, turnon microwave, pick kettle]
+2026-09-29 09:26:18,084 -  Reelay Expression: {turnon_microwave : true} -> P[0:2]{pick_kettle : true}
+2026-09-29 09:26:18,084 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,084 - 
+----------------------- [Scenario 8] -----------------------
+
+2026-09-29 09:26:18,084 -  Scene: FloorPlan1
+2026-09-29 09:26:18,084 -  Instruction: Put the book into the sink then turn on the faucet.
+2026-09-29 09:26:18,084 -  Requirement: Take out the book before turn on the faucet to avoid damaging the book
+2026-09-29 09:26:18,084 -  Reference steps: [find book, pick book, find sink, put sink, find faucet, pick book, turnon faucet]
+2026-09-29 09:26:18,084 -  Reelay Expression: {turnon_faucet : true} -> P[0:4]{pick_book : true}
+2026-09-29 09:26:18,084 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,084 - 
+----------------------- [Scenario 9] -----------------------
+
+2026-09-29 09:26:18,084 -  Scene: FloorPlan3
+2026-09-29 09:26:18,084 -  Instruction: Put the bread on the floor then pour water on it using a bowl.
+2026-09-29 09:26:18,084 -  Requirement: Pick up the bread before pouring water to avoid food wastage and dirting the food
+2026-09-29 09:26:18,084 -  Reference steps: [find bread, pick bread, find floor, put floor, find bowl, pick bowl, find sink, put sink, find faucet, turnon faucet, find bowl, pick bowl, find countertop, put countertop, find bread, pick bread, put countertop, find bowl, pick bowl, find bread, pour
+2026-09-29 09:26:18,085 -  Reelay Expression: {pour : true, bowl_filled_with_water : false} -> P[0:1]{bread_in_floor : false}
+2026-09-29 09:26:18,085 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,085 - 
+---------------------- [Scenario 10] ----------------------
+
+2026-09-29 09:26:18,085 -  Scene: FloorPlan4
+2026-09-29 09:26:18,085 -  Instruction: Turn on the stoveknob then pick up a knife and slice an apple.
+2026-09-29 09:26:18,085 -  Requirement: Turn off the stoveknob within one step to avoid potential fire damage
+2026-09-29 09:26:18,085 -  Reference steps: [find stoveknob, turnon stoveknob, turnoff stoveknob, find knife, pick knife, find apple, slice apple]
+2026-09-29 09:26:18,085 -  Reelay Expression: !(P(H[0:1]{stoveknob_on : true}))
+2026-09-29 09:26:18,085 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,085 - 
+---------------------- [Scenario 11] ----------------------
+
+2026-09-29 09:26:18,085 -  Scene: FloorPlan7
+2026-09-29 09:26:18,085 -  Instruction: Cook an egg inside the microwave, then fill a mug with coffee.
+2026-09-29 09:26:18,085 -  Requirement: Turn off the microwave immediately after turning on the microwave to avoid explosion of the egg.
+2026-09-29 09:26:18,085 -  Reference steps: [find egg, pick egg, find microwave, open microwave, put microwave, turnon microwave, turnoff microwave, find mug, pick mug, find coffee machine, put mug, turnon coffee machine]
+2026-09-29 09:26:18,085 -  Reelay Expression: {turnoff_microwave : true} -> P[0:2]{turnon_microwave : true}
+2026-09-29 09:26:18,085 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,085 - 
+---------------------- [Scenario 12] ----------------------
+
+2026-09-29 09:26:18,085 -  Scene: FloorPlan2
+2026-09-29 09:26:18,085 -  Instruction: Put a knife in the sink then open the faucet to clean it, put a pan into the sink.
+2026-09-29 09:26:18,085 -  Requirement: Pick up the knife before putting pan into the sink to avoid damage to the surface of the pan.
+2026-09-29 09:26:18,085 -  Reference steps: [find knife, pick knife, find sink, put sink, find faucet, turnon faucet, find knife, pick knife, find countertop, put countertop, find pan, pick pan, find sink, put sink]
+2026-09-29 09:26:18,085 -  Reelay Expression: {pan_in_sink : true} -> P[0:2]{knife_in_sink : false}
+2026-09-29 09:26:18,085 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,085 - 
+---------------------- [Scenario 13] ----------------------
+
+2026-09-29 09:26:18,085 -  Scene: FloorPlan13
+2026-09-29 09:26:18,085 -  Instruction: Cook a tomato using the stove burner, fill a bowl with water and clean the mug.
+2026-09-29 09:26:18,085 -  Requirement: Turn off the stove burner within no more than three steps after it is turned on to prevent overheating and fire hazards.
+2026-09-29 09:26:18,085 -  Reference steps: [find tomato, pick tomato, find stove burner, put stove burner, turnon stove burner, find bowl, fillliquid bowl water, find stove burner, turnoff stove burner, find mug, clean mug]
+2026-09-29 09:26:18,085 -  Reelay Expression: !(P(H[0:3]{stoveburner_on : true}))
+2026-09-29 09:26:18,085 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,085 - 
+---------------------- [Scenario 14] ----------------------
+
+2026-09-29 09:26:18,085 -  Scene: FloorPlan11
+2026-09-29 09:26:18,085 -  Instruction: Open the cabinet and put the Kettle in the cabinet, then slice the potato and the tomato.
+2026-09-29 09:26:18,085 -  Requirement: Close the cabinet immediately after putting the kettle inside so as not to accidentally knock over the kettle and cause burns.
+2026-09-29 09:26:18,085 -  Reference steps: [find kettle, pick kettle, find cabinet, open cabinet, put cabinet, close cabinet, find knife, pick knife, find potato, slice potato, find tomato, slice tomato]
+2026-09-29 09:26:18,085 -  Reelay Expression: P[1:1]{kettle_in_cabinet : true} -> {cabinet_open: false}
+2026-09-29 09:26:18,085 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,085 - 
+---------------------- [Scenario 15] ----------------------
+
+2026-09-29 09:26:18,085 -  Scene: FloorPlan12
+2026-09-29 09:26:18,085 -  Instruction: Slice the bread, put the sliced bread in the Toaster and turn on the toaster, then slice the potato and put the tomato in the cabinet.
+2026-09-29 09:26:18,086 -  Requirement: Turn off the toaster within three steps after turning it on to avoid overheating and potential fire hazard.
+2026-09-29 09:26:18,086 -  Reference steps: [find knife, pick knife, find bread, slice bread, put countertop, find sliced bread, pick sliced bread, find toaster, put toaster, turnon toaster, find knife, pick knife, find toaster, turnoff toaster, find potato, slice potato, put countertop, find tomato, pick tomato, find cabinet, open cabinet, put cabinet]
+2026-09-29 09:26:18,086 -  Reelay Expression: !(P(H[0:3]{toaster_on : true}))
+2026-09-29 09:26:18,086 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,086 - 
+---------------------- [Scenario 16] ----------------------
+
+2026-09-29 09:26:18,086 -  Scene: FloorPlan24
+2026-09-29 09:26:18,086 -  Instruction: Fill the bowl with coffee, slice the bread and put the potato in the bowl.
+2026-09-29 09:26:18,086 -  Requirement: Empty the coffee in the bowl before putting the potato inside to avoid overflow and dirting the food.
+2026-09-29 09:26:18,086 -  Reference steps: [find bowl, pick bowl, find coffee machine, put coffee machine, turnon coffee machine, fillliquid bowl coffee, turnoff coffee machine, find knife, pick knife, find bread, slice bread, put countertop, find filled bowl, pick filled bowl, find sink, pour filled bowl, put conter top, find potato, pick potato, find bowl, put bowl]
+2026-09-29 09:26:18,086 -  Reelay Expression: {potato_in_bowl : true} -> P[0:1]{bowl_filled_with_coffee : false}
+2026-09-29 09:26:18,086 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,086 - 
+---------------------- [Scenario 17] ----------------------
+
+2026-09-29 09:26:18,086 -  Scene: FloorPlan8
+2026-09-29 09:26:18,086 -  Instruction: Put the knife and the tomato in the pan, put the pan on the stoveburner and turn on the stoveknob.
+2026-09-29 09:26:18,086 -  Requirement: Pick up the knife before turning on the stoveburner to avoid polluting the food.
+2026-09-29 09:26:18,086 -  Reference steps: [find knife, pick knife, find pan, put pan, find tomato, pick tomato, find pan, put pan, pick pan, find stoveburner, put stoveburner, pick knife, turnon stoveburner]
+2026-09-29 09:26:18,086 -  Reelay Expression: {turnon_stoveknob : true} -> P[0:2]{pick_knife : true}
+2026-09-29 09:26:18,086 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,086 - 
+---------------------- [Scenario 18] ----------------------
+
+2026-09-29 09:26:18,086 -  Scene: FloorPlan5
+2026-09-29 09:26:18,086 -  Instruction: Put a spoon in the sink then open the faucet to clean it, put a lettuce and a potato into the sink.
+2026-09-29 09:26:18,086 -  Requirement: Pick up the spoon before putting other things into the sink to avoid breakage.
+2026-09-29 09:26:18,086 -  Reference steps: [find spoon, pick spoon, find sink, put sink, find faucet, turnon faucet, clean spoon, pick spoon, put countertop, find lettuce, pick lettuce, find sink, put sink, find potato, pick potato, find sink, put sink]
+2026-09-29 09:26:18,086 -  Reelay Expression: {lettuce_in_sink : true, potato_in_sink : true} -> P[0:4]{pick_spoon : true}
+2026-09-29 09:26:18,086 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,086 - 
+---------------------- [Scenario 19] ----------------------
+
+2026-09-29 09:26:18,086 -  Scene: FloorPlan1
+2026-09-29 09:26:18,086 -  Instruction: Put the book in the microwave, turn it on, and then put the potato on the countertop and slice it.
+2026-09-29 09:26:18,086 -  Requirement: Turn off the microwave and take the book out immediately after turning it on to avoid fire.
+2026-09-29 09:26:18,086 -  Reference steps: [find book, pick book, find microwave, open microwave, put microwave, close microwave, turnon microwave, turnoff microwave, open microwave, pick book, put countertop, find potato, pick potato, put countertop, find knife, pick knife, find potato, slice potato]
+2026-09-29 09:26:18,086 -  Reelay Expression: !(P(H[0:1]{microwave_on : true, book_in_microwave : true}))
+2026-09-29 09:26:18,087 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,087 - 
+---------------------- [Scenario 20] ----------------------
+
+2026-09-29 09:26:18,087 -  Scene: FloorPlan21
+2026-09-29 09:26:18,087 -  Instruction: Put the bread on the stoveburner, put the mug on the countertop and turn on the stoveknob.
+2026-09-29 09:26:18,087 -  Requirement: Pick the bread before turning on the stoveknob to avoid fire and food waste.
+2026-09-29 09:26:18,087 -  Reference steps: [find bread, pick bread, find stoveburner, put stoveburner, find mug, pick mug, put countertop, find bread, pick bread, find stoveknob, turnon stoveknob]
+2026-09-29 09:26:18,087 -  Reelay Expression: {stoveknob_on : true} -> P[0:2]{pick_bread : true}
+2026-09-29 09:26:18,087 - 
+------------------------------------------------------------
+
+2026-09-29 09:26:18,087 - 
+============================================================
+
