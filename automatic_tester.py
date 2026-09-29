@@ -25,9 +25,8 @@ from rye import RyeManager
 from ai2_thor_executer import Ai2THORExecuter
 from mr_handler import MR
 
-REPEATS_PER_SCENARIO = 1
-#MR_TO_CHECK = len(MR) + 1
-MR_TO_CHECK = 1
+REPEATS_PER_SCENARIO = 20
+MR_TO_CHECK = len(MR) + 1
 
 def get_scenarios():
     try:
